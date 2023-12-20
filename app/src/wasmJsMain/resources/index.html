@@ -40,10 +40,21 @@
             transform: rotate(90deg); /* Rotate the icon when collapsed */
         }
 
+        table {
+            border-collapse: collapse;
+            border: 1px solid #dddddd;
+            padding: 10px;
+        }
+
+        th, td {
+            border: 1px solid #dddddd;
+            padding: 10px;
+        }
+
         #dropbox {
             width: 12em;
             height: 4em;
-            border: 0.25em dashed #ccc;
+            border: 0.25em dashed #cccccc;
             text-align: center;
             font-size: large;
             padding: 1em;
@@ -66,15 +77,13 @@
             margin: 1em;
         }
 
-        table {
-            border-collapse: collapse;
-            border: 1px solid #ddd;
-            padding: 10px;
+        #thumbnail-content {
+            text-align: center;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+        #thumbnail {
+            max-width: 80%;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -131,6 +140,15 @@
         <i class="fas fa-chevron-down expand-icon"></i>
     </div>
     <div class="box-content" id="xmp"></div>
+</div>
+
+<div style="text-align: center; margin-top: 20px;">
+    <p>
+        <a href="https://github.com/StefanOltmann/exif-viewer"
+           style="color: #333333; text-decoration: none" target="_blank">
+            <i class="fab fa-github"></i> https://github.com/StefanOltmann/exif-viewer
+        </a>
+    </p>
 </div>
 
 <script type="application/javascript">
@@ -216,15 +234,6 @@
     addEventListener("error", (event) => unhandledError(event, event.error));
     addEventListener("unhandledrejection", (event) => unhandledError(event, event.reason));
 </script>
-
-<div style="text-align: center; margin-top: 20px;">
-    <p>
-        <a href="https://github.com/StefanOltmann/exif-viewer"
-           style="color: #333333; text-decoration: none" target="_blank">
-            <i class="fab fa-github"></i> https://github.com/StefanOltmann/exif-viewer
-        </a>
-    </p>
-</div>
 
 </body>
 </html>

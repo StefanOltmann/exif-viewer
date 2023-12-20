@@ -1,4 +1,6 @@
 import com.ashampoo.kim.Kim
+import com.ashampoo.kim.format.tiff.constants.TiffTag
+import com.ashampoo.kim.model.TiffOrientation
 import kotlinx.browser.document
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.Element
@@ -32,7 +34,7 @@ fun processFile(uint8Array: Uint8Array) {
 
         if (metadata == null) {
             updateAll("No metadata found.")
-            updateThumbnail(null)
+            updateThumbnail(null, TiffOrientation.STANDARD)
             return
         }
 
@@ -40,14 +42,18 @@ fun processFile(uint8Array: Uint8Array) {
         updateHtml(iptcElement, metadata.toIptcHtmlString())
         updateHtml(xmpElement, metadata.toXmpHtmlString())
 
-        updateThumbnail(metadata.getExifThumbnailBytes())
+        val orientation: TiffOrientation = TiffOrientation.of(
+            metadata.findShortValue(TiffTag.TIFF_TAG_ORIENTATION)?.toInt()
+        ) ?: TiffOrientation.STANDARD
+
+        updateThumbnail(metadata.getExifThumbnailBytes(), orientation)
 
     } catch (ex: Exception) {
 
         ex.printStackTrace()
 
         updateAll("Parsing error: ${ex.message}")
-        updateThumbnail(null)
+        updateThumbnail(null, TiffOrientation.STANDARD)
     }
 }
 
@@ -60,7 +66,7 @@ private fun updateAll(html: String) {
 private fun updateHtml(element: Element?, html: String) =
     element?.let { it.innerHTML = html }
 
-private fun updateThumbnail(imageBytes: ByteArray?) {
+private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation) {
 
     htmlThumbnailImageElement?.let { imageElement ->
 
@@ -71,6 +77,24 @@ private fun updateThumbnail(imageBytes: ByteArray?) {
             val url = URL.Companion.createObjectURL(blob)
 
             imageElement.src = url
+
+            /*
+             * Use CSS to rotate the image to keep the original image bytes.
+             * If the user saves the image to disk it should still be identical to
+             * the output of "exiftool -b -ThumbnailImage test.jpg > thumb.jpg".
+             */
+            val styleTransform = when (orientation) {
+                TiffOrientation.MIRROR_HORIZONTAL -> "scale(-1, 1)"
+                TiffOrientation.UPSIDE_DOWN -> "rotate(180deg)"
+                TiffOrientation.MIRROR_VERTICAL -> "scale(1, -1)"
+                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT -> "rotate(-90deg) scale(1, -1)"
+                TiffOrientation.ROTATE_RIGHT -> "rotate(90deg)"
+                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> "rotate(90deg) scale(1, -1)"
+                TiffOrientation.ROTATE_LEFT -> "rotate(-90deg)"
+                else -> ""
+            }
+
+            imageElement.style.transform = styleTransform
 
         } else {
 
