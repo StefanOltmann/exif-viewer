@@ -61,6 +61,11 @@ fun ImageMetadata.toIptcHtmlString(): String =
             return@buildString
         }
 
+        if (iptc?.records?.isEmpty() == true) {
+            append("IPTC present, but has no records.")
+            return@buildString
+        }
+
         append("<table>")
 
         append("<tr>")

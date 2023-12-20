@@ -18,7 +18,6 @@ fun main() {
     xmpElement = document.getElementById("xmp")
 
     htmlThumbnailImageElement = document.getElementById("thumbnail") as? HTMLImageElement
-
 }
 
 @OptIn(ExperimentalJsExport::class)
@@ -33,6 +32,7 @@ fun processFile(uint8Array: Uint8Array) {
 
         if (metadata == null) {
             updateAll("No metadata found.")
+            updateThumbnail(null)
             return
         }
 
@@ -47,6 +47,7 @@ fun processFile(uint8Array: Uint8Array) {
         ex.printStackTrace()
 
         updateAll("Parsing error: ${ex.message}")
+        updateThumbnail(null)
     }
 }
 
