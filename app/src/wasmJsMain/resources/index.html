@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EXIF Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="application/javascript" src="app.js"></script>
+    <style>
+
+        .box {
+            border: 2px solid #333333;
+            margin: 10px;
+        }
+
+        .box-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 0;
+            cursor: pointer; /* Add cursor pointer for better UX */
+            background-color: #eeeeee; /* Header color */
+            color: #333333; /* Text color */
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .box-content {
+            display: block; /* Initially show the content */
+            padding: 10px;
+        }
+
+        .expand-icon {
+            font-size: 18px;
+            margin-right: 5px;
+            transition: transform 0.3s ease; /* Add smooth transition */
+        }
+
+        .box.collapsed .expand-icon {
+            transform: rotate(90deg); /* Rotate the icon when collapsed */
+        }
+
+        #dropbox {
+            width: 12em;
+            height: 4em;
+            border: 0.25em dashed #ccc;
+            text-align: center;
+            font-size: large;
+            padding: 1em;
+            margin: 1em auto;
+        }
+
+        #dropbox.highlight {
+            border-color: #008000;
+        }
+
+        #fileInput {
+            display: none; /* hide file input field */
+        }
+
+        #warning {
+            background-color: yellow;
+            font-size: initial;
+            display: none;
+            padding: 1em;
+            margin: 1em;
+        }
+
+        table {
+            border-collapse: collapse;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div style="text-align: center;">
+    <h1>EXIF Viewer</h1>
+</div>
+
+<center>
+    <div id="warning">⚠️ Your browser does not support WebAssembly. ⚠️</div>
+</center>
+
+<div id="dropbox">
+    <input id="fileInput" type="file">
+    <p>Drag & drop your file here<br>or click to select a file!</p>
+</div>
+
+<div style="font-size: medium; text-align: center;">
+    <p>JPG, PNG & TIFF files are supported.<br>
+        Processing happens solely in your browser, no servers involved.</p>
+</div>
+
+<div id="thumbnail-box" class="box">
+    <div class="box-title" onclick="toggleBoxContent('thumbnail-box')">
+        Embedded Thumbnail
+        <i class="fas fa-chevron-down expand-icon"></i>
+    </div>
+    <div class="box-content" id="thumbnail-content">
+        <img id="thumbnail" alt="">
+    </div>
+</div>
+
+<div id="exif-box" class="box">
+    <div class="box-title" onclick="toggleBoxContent('exif-box')">
+        EXIF
+        <i class="fas fa-chevron-down expand-icon"></i>
+    </div>
+    <div class="box-content" id="exif"></div>
+</div>
+
+<div id="iptc-box" class="box">
+    <div class="box-title" onclick="toggleBoxContent('iptc-box')">
+        IPTC
+        <i class="fas fa-chevron-down expand-icon"></i>
+    </div>
+    <div class="box-content" id="iptc"></div>
+</div>
+
+<div id="xmp-box" class="box">
+    <div class="box-title" onclick="toggleBoxContent('xmp-box')">
+        XMP
+        <i class="fas fa-chevron-down expand-icon"></i>
+    </div>
+    <div class="box-content" id="xmp"></div>
+</div>
+
+<script type="application/javascript">
+
+    const dropbox = document.getElementById('dropbox');
+    const fileInput = document.getElementById('fileInput');
+
+    dropbox.addEventListener('dragover', handleDragOver);
+    dropbox.addEventListener('dragleave', handleDragLeave);
+    dropbox.addEventListener('drop', handleDrop);
+    dropbox.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', event => {
+
+        if (event.target.files.length === 0)
+            return;
+
+        handleFile(event.target.files[0]);
+    });
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        dropbox.classList.add('highlight');
+    }
+
+    function handleDragLeave(event) {
+        event.preventDefault();
+        dropbox.classList.remove('highlight');
+    }
+
+    function handleDrop(event) {
+
+        event.preventDefault();
+        dropbox.classList.remove('highlight');
+        let items = event.dataTransfer.items;
+
+        if (items.length === 0)
+            return;
+
+        handleFile(items[0].getAsFile());
+    }
+
+    function handleFile(file) {
+
+        let fileReader = new FileReader()
+
+        fileReader.onload = function (event) {
+
+            let uInt8Bytes = new Uint8Array(event.target.result);
+
+            app.then(exports => {
+                exports.default.processFile(uInt8Bytes);
+            });
+        };
+
+        fileReader.readAsArrayBuffer(file);
+    }
+
+    function toggleBoxContent(boxId) {
+        const box = document.getElementById(boxId);
+        if (box) {
+            const content = box.querySelector('.box-content');
+            if (content) {
+                content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                box.classList.toggle('collapsed', content.style.display === 'none');
+            }
+        }
+    }
+
+    const unhandledError = (event, error) => {
+        if (error instanceof WebAssembly.CompileError) {
+
+            document.getElementById("warning").style.display = "initial";
+            document.getElementById("dropbox").style.display = "none";
+
+            // Hide the Webpack overlay
+            const webpackOverlay = document.getElementById("webpack-dev-server-client-overlay");
+            if (webpackOverlay != null)
+                webpackOverlay.style.display = "none";
+        }
+    }
+    addEventListener("error", (event) => unhandledError(event, event.error));
+    addEventListener("unhandledrejection", (event) => unhandledError(event, event.reason));
+</script>
+
+<div style="text-align: center; margin-top: 20px;">
+    <p>
+        <a href="https://github.com/StefanOltmann/exif-viewer"
+           style="color: #333333; text-decoration: none" target="_blank">
+            <i class="fab fa-github"></i> https://github.com/StefanOltmann/exif-viewer
+        </a>
+    </p>
+</div>
+
+</body>
+</html>
