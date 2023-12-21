@@ -1,6 +1,11 @@
 import com.ashampoo.kim.common.HEX_RADIX
+import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.tiff.TiffDirectory
+
+private const val SPACE: String = "&nbsp;"
+
+private const val BYTES_PER_ROW: Int = 16
 
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
@@ -111,8 +116,38 @@ fun ImageMetadata.toXmpHtmlString(): String =
         )
     }
 
+fun ByteArray.toJpegHex(): String {
+
+//    val imageMetadata = JpegImageParser.parseMetadata(ByteArrayByteReader(this))
+
+    return buildString {
+
+        appendLine("<div style=\"font-family: monospace\">")
+
+        var numbersInLine = 0
+
+        for (byte in this@toJpegHex) {
+
+            append(byte.toHex().uppercase() + SPACE)
+
+            numbersInLine++
+
+            /* Extra spacing */
+            if (numbersInLine == BYTES_PER_ROW / 2)
+                append(SPACE)
+
+            if (numbersInLine == BYTES_PER_ROW) {
+                appendLine("<br>")
+                numbersInLine = 0
+            }
+        }
+
+        appendLine("</div>")
+    }
+}
+
 fun String.escapeHtmlSpecialChars(): String =
     this.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
-        .replace(" ", "&nbsp;")
+        .replace(" ", SPACE)
