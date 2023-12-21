@@ -142,6 +142,14 @@
     <div class="box-content" id="xmp"></div>
 </div>
 
+<div id="hex-box" class="box">
+    <div class="box-title" onclick="toggleBoxContent('hex-box')">
+        HEX view
+        <i class="fas fa-chevron-down expand-icon"></i>
+    </div>
+    <div class="box-content" id="hex"></div>
+</div>
+
 <div style="text-align: center; margin-top: 20px;">
     <p>
         <a href="https://github.com/StefanOltmann/exif-viewer"
@@ -247,6 +255,7 @@
 
     /* Initially collapsed */
     toggleBoxContent('xmp-box')
+    toggleBoxContent('hex-box')
 
 </script>
 

@@ -10,6 +10,7 @@ import org.w3c.dom.url.URL
 private var exifElement: Element? = null
 private var iptcElement: Element? = null
 private var xmpElement: Element? = null
+private var hexElement: Element? = null
 
 private var htmlThumbnailImageElement: HTMLImageElement? = null
 
@@ -18,6 +19,7 @@ fun main() {
     exifElement = document.getElementById("exif")
     iptcElement = document.getElementById("iptc")
     xmpElement = document.getElementById("xmp")
+    hexElement = document.getElementById("hex")
 
     htmlThumbnailImageElement = document.getElementById("thumbnail") as? HTMLImageElement
 }
@@ -42,6 +44,8 @@ fun processFile(uint8Array: Uint8Array) {
         updateHtml(iptcElement, metadata.toIptcHtmlString())
         updateHtml(xmpElement, metadata.toXmpHtmlString())
 
+        updateHtml(hexElement, bytes.toJpegHex())
+
         val orientation: TiffOrientation = TiffOrientation.of(
             metadata.findShortValue(TiffTag.TIFF_TAG_ORIENTATION)?.toInt()
         ) ?: TiffOrientation.STANDARD
@@ -61,6 +65,7 @@ private fun updateAll(html: String) {
     updateHtml(exifElement, html)
     updateHtml(iptcElement, html)
     updateHtml(xmpElement, html)
+    updateHtml(hexElement, html)
 }
 
 private fun updateHtml(element: Element?, html: String) =
