@@ -1,7 +1,7 @@
-import com.ashampoo.kim.common.HEX_RADIX
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
+import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
 import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.input.ByteArrayByteReader
@@ -44,7 +44,7 @@ fun ImageMetadata.toExifHtmlString(): String =
                 append("</td>")
 
                 append("<td>")
-                append(formatTag(entry.tag))
+                append(entry.tagFormatted)
                 append("</td>")
 
                 append("<td>")
@@ -61,9 +61,6 @@ fun ImageMetadata.toExifHtmlString(): String =
 
         append("</table>")
     }
-
-private fun formatTag(tag: Int): String =
-    "0x" + tag.toString(HEX_RADIX).padStart(4, '0')
 
 fun ImageMetadata.toIptcHtmlString(): String =
     buildString {
@@ -137,7 +134,14 @@ fun ByteArray.toJpegHex(): String {
 
             val bytesOfLine = mutableListOf<Byte>()
 
+            var skipToPosition: Long? = null
+
             for (position in segmentInfo.offset..endPosition) {
+
+                if (skipToPosition != null && position < skipToPosition)
+                    continue
+                else
+                    skipToPosition = null
 
                 val byte = this@toJpegHex[position.toInt()]
 
@@ -161,6 +165,22 @@ fun ByteArray.toJpegHex(): String {
                     appendLine("<br>")
 
                     bytesOfLine.clear()
+
+                    /*
+                     * Start of Scan contains image data and is very long. We want to skip
+                     * all these data which are not useful for a metadata hex dump.
+                     */
+                    if (segmentInfo.marker == JpegConstants.SOS_MARKER && position != endPosition) {
+
+                        append(".".repeat(POS_COUNTER_LENGTH) + SEPARATOR)
+
+                        append("... snipped X bytes ...")
+
+                        appendLine("<br>")
+
+                        /* Skip all the rest. */
+                        skipToPosition = endPosition - BYTES_PER_ROW + 1
+                    }
                 }
             }
         }
