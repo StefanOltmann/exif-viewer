@@ -172,7 +172,7 @@ fun ByteArray.toJpegHex(): String {
                      */
                     if (segmentInfo.marker == JpegConstants.SOS_MARKER && position != endPosition) {
 
-                        append(".".repeat(POS_COUNTER_LENGTH) + SEPARATOR)
+                        append(SPACE.repeat(POS_COUNTER_LENGTH) + SEPARATOR)
 
                         append("... snipped X bytes ...")
 
