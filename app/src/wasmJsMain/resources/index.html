@@ -26,7 +26,7 @@
         }
 
         .box-content {
-            display: block; /* Initially show the content */
+            display: block;
             padding: 10px;
         }
 
@@ -170,13 +170,17 @@
     });
 
     function handleDragOver(event) {
+
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
+
         dropbox.classList.add('highlight');
     }
 
     function handleDragLeave(event) {
+
         event.preventDefault();
+
         dropbox.classList.remove('highlight');
     }
 
@@ -184,6 +188,7 @@
 
         event.preventDefault();
         dropbox.classList.remove('highlight');
+
         let items = event.dataTransfer.items;
 
         if (items.length === 0)
@@ -209,9 +214,13 @@
     }
 
     function toggleBoxContent(boxId) {
+
         const box = document.getElementById(boxId);
+
         if (box) {
+
             const content = box.querySelector('.box-content');
+
             if (content) {
                 content.style.display = content.style.display === 'none' ? 'block' : 'none';
                 box.classList.toggle('collapsed', content.style.display === 'none');
@@ -220,6 +229,7 @@
     }
 
     const unhandledError = (event, error) => {
+
         if (error instanceof WebAssembly.CompileError) {
 
             document.getElementById("warning").style.display = "initial";
@@ -231,8 +241,13 @@
                 webpackOverlay.style.display = "none";
         }
     }
+
     addEventListener("error", (event) => unhandledError(event, event.error));
     addEventListener("unhandledrejection", (event) => unhandledError(event, event.reason));
+
+    /* Initially collapsed */
+    toggleBoxContent('xmp-box')
+
 </script>
 
 </body>
