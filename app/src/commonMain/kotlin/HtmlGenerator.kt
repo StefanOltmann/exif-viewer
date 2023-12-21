@@ -1,5 +1,6 @@
 import com.ashampoo.kim.common.HEX_RADIX
 import com.ashampoo.kim.common.toHex
+import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.tiff.TiffDirectory
 
@@ -7,7 +8,7 @@ import com.ashampoo.kim.format.tiff.TiffDirectory
 private const val POS_COUNTER_LENGTH = 8
 
 private const val SPACE: String = "&nbsp;"
-private const val SEPERATOR: String = "$SPACE|$SPACE"
+private const val SEPARATOR: String = "$SPACE|$SPACE"
 
 private const val BYTES_PER_ROW: Int = 16
 
@@ -130,28 +131,35 @@ fun ByteArray.toJpegHex(): String {
 
         var position = 0
 
-        var numbersInLine = 0
-
-        append(toPaddedPos(position) + SEPERATOR)
+        val bytesOfLine = mutableListOf<Byte>()
 
         for (byte in this@toJpegHex) {
 
+            if (bytesOfLine.isEmpty())
+                append(toPaddedPos(position) + SEPARATOR)
+
             position++
+
+            bytesOfLine.add(byte)
 
             append(byte.toHex().uppercase() + SPACE)
 
-            numbersInLine++
-
             /* Extra spacing */
-            if (numbersInLine == BYTES_PER_ROW / 2)
+            if (bytesOfLine.size == BYTES_PER_ROW / 2)
                 append(SPACE)
 
-            if (numbersInLine == BYTES_PER_ROW) {
+            if (bytesOfLine.size == BYTES_PER_ROW || position == size) {
+
+                append("|$SPACE")
+
+                append(decodeBytesForHexView(bytesOfLine))
 
                 appendLine("<br>")
-                numbersInLine = 0
 
-                append(toPaddedPos(position) + SEPERATOR)
+                bytesOfLine.clear()
+
+                if (position > 100000)
+                    break
             }
         }
 
@@ -167,3 +175,26 @@ fun String.escapeHtmlSpecialChars(): String =
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace(" ", SPACE)
+
+@Suppress("MagicNumber")
+private fun decodeBytesForHexView(bytes: List<Byte>): String =
+    buildString {
+        for (byte in bytes) {
+
+            when (val intValue = byte.toUInt8()) {
+
+                /* Use fixed space to allow multiple after another. */
+                32 -> append(SPACE)
+
+                /* Special HTML chars */
+                38 -> append("&amp;")
+                60 -> append("&lt;")
+                62 -> append("&gt;")
+
+                /* Range of printable chars. */
+                in 32..126 -> append(intValue.toChar())
+
+                else -> append('.')
+            }
+        }
+    }
