@@ -125,55 +125,43 @@ fun ImageMetadata.toXmpHtmlString(): String =
 
 fun ByteArray.toJpegHex(): String {
 
-//    val imageMetadata = JpegImageParser.parseMetadata(ByteArrayByteReader(this))
-
-    val sizeAsLong = size.toLong()
-
     val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
-
-    val segmentInfoByOffsetMap: Map<Long, JpegSegmentAnalyzer.JpegSegmentInfo> =
-        segmentInfos.associateBy { it.offset }
-
-    var currentSegmentInfo: JpegSegmentAnalyzer.JpegSegmentInfo? = null
 
     return buildString {
 
         appendLine("<div style=\"font-family: monospace\">")
 
-        var position: Long = 0
+        for (segmentInfo in segmentInfos) {
 
-        segmentInfoByOffsetMap[position]?.let {
-            currentSegmentInfo = it
-        }
+            val endPosition = segmentInfo.offset + segmentInfo.length - 1
 
-        val bytesOfLine = mutableListOf<Byte>()
+            val bytesOfLine = mutableListOf<Byte>()
 
-        for (byte in this@toJpegHex) {
+            for (position in segmentInfo.offset..endPosition) {
 
-            if (bytesOfLine.isEmpty())
-                append(toPaddedPos(position) + SEPARATOR)
+                val byte = this@toJpegHex[position.toInt()]
 
-            position++
+                if (bytesOfLine.isEmpty())
+                    append(toPaddedPos(position) + SEPARATOR)
 
-            bytesOfLine.add(byte)
+                bytesOfLine.add(byte)
 
-            append(byte.toHex().uppercase() + SPACE)
+                append(byte.toHex().uppercase() + SPACE)
 
-            /* Extra spacing */
-            if (bytesOfLine.size == BYTES_PER_ROW / 2)
-                append(SPACE)
+                /* Extra spacing */
+                if (bytesOfLine.size == BYTES_PER_ROW / 2)
+                    append(SPACE)
 
-            if (bytesOfLine.size == BYTES_PER_ROW || position == sizeAsLong) {
+                if (bytesOfLine.size == BYTES_PER_ROW || position == endPosition) {
 
-                append("|$SPACE")
+                    append("|$SPACE")
 
-                append(decodeBytesForHexView(bytesOfLine))
+                    append(decodeBytesForHexView(bytesOfLine))
 
-                append(currentSegmentInfo?.marker)
+                    appendLine("<br>")
 
-                appendLine("<br>")
-
-                bytesOfLine.clear()
+                    bytesOfLine.clear()
+                }
             }
         }
 
