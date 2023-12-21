@@ -102,15 +102,19 @@ private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation
              */
             imageElement.onload = {
 
+                val naturalWidth = imageElement.width * 1.0
+                val naturalHeight = imageElement.height * 1.0
+
+                val scale = if (naturalWidth > naturalHeight) (naturalHeight / naturalWidth) else 1
+
                 when (orientation) {
-                    TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT, TiffOrientation.ROTATE_RIGHT,
-                    TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT, TiffOrientation.ROTATE_LEFT -> {
+                    TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT,
+                    TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> {
+                        imageElement.style.transform += " scale($scale, -$scale)"
+                    }
 
-                        val naturalWidth = imageElement.width * 1.0
-                        val naturalHeight = imageElement.height * 1.0
-
-                        val scale = if (naturalWidth > naturalHeight) (naturalHeight / naturalWidth) else 1
-
+                    TiffOrientation.ROTATE_RIGHT,
+                    TiffOrientation.ROTATE_LEFT -> {
                         imageElement.style.transform += " scale($scale)"
                     }
 
