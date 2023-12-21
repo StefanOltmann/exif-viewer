@@ -2,7 +2,9 @@ import com.ashampoo.kim.common.HEX_RADIX
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
+import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
 import com.ashampoo.kim.format.tiff.TiffDirectory
+import com.ashampoo.kim.input.ByteArrayByteReader
 
 /* Show byte positions up to 99 MB. Hopefully that's enough. */
 private const val POS_COUNTER_LENGTH = 8
@@ -125,11 +127,24 @@ fun ByteArray.toJpegHex(): String {
 
 //    val imageMetadata = JpegImageParser.parseMetadata(ByteArrayByteReader(this))
 
+    val sizeAsLong = size.toLong()
+
+    val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
+
+    val segmentInfoByOffsetMap: Map<Long, JpegSegmentAnalyzer.JpegSegmentInfo> =
+        segmentInfos.associateBy { it.offset }
+
+    var currentSegmentInfo: JpegSegmentAnalyzer.JpegSegmentInfo? = null
+
     return buildString {
 
         appendLine("<div style=\"font-family: monospace\">")
 
-        var position = 0
+        var position: Long = 0
+
+        segmentInfoByOffsetMap[position]?.let {
+            currentSegmentInfo = it
+        }
 
         val bytesOfLine = mutableListOf<Byte>()
 
@@ -148,18 +163,17 @@ fun ByteArray.toJpegHex(): String {
             if (bytesOfLine.size == BYTES_PER_ROW / 2)
                 append(SPACE)
 
-            if (bytesOfLine.size == BYTES_PER_ROW || position == size) {
+            if (bytesOfLine.size == BYTES_PER_ROW || position == sizeAsLong) {
 
                 append("|$SPACE")
 
                 append(decodeBytesForHexView(bytesOfLine))
 
+                append(currentSegmentInfo?.marker)
+
                 appendLine("<br>")
 
                 bytesOfLine.clear()
-
-                if (position > 100000)
-                    break
             }
         }
 
@@ -167,7 +181,7 @@ fun ByteArray.toJpegHex(): String {
     }
 }
 
-private fun toPaddedPos(pos: Int) =
+private fun toPaddedPos(pos: Long) =
     pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
 fun String.escapeHtmlSpecialChars(): String =
