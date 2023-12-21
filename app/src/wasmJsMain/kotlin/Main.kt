@@ -78,23 +78,25 @@ private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation
 
             imageElement.src = url
 
-            /*
-             * Use CSS to rotate the image to keep the original image bytes.
-             * If the user saves the image to disk it should still be identical to
-             * the output of "exiftool -b -ThumbnailImage test.jpg > thumb.jpg".
-             */
-            val styleTransform = when (orientation) {
-                TiffOrientation.MIRROR_HORIZONTAL -> "scale(-1, 1)"
-                TiffOrientation.UPSIDE_DOWN -> "rotate(180deg)"
-                TiffOrientation.MIRROR_VERTICAL -> "scale(1, -1)"
-                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT -> "rotate(-90deg) scale(1, -1)"
-                TiffOrientation.ROTATE_RIGHT -> "rotate(90deg)"
-                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> "rotate(90deg) scale(1, -1)"
-                TiffOrientation.ROTATE_LEFT -> "rotate(-90deg)"
-                else -> ""
-            }
-
-            imageElement.style.transform = styleTransform
+            // FIXME If applied the transformation the image will not fit into the box.
+            //   I was unable to find a solution for this so far.
+//            /*
+//             * Use CSS to rotate the image to keep the original image bytes.
+//             * If the user saves the image to disk it should still be identical to
+//             * the output of "exiftool -b -ThumbnailImage test.jpg > thumb.jpg".
+//             */
+//            val styleTransform = when (orientation) {
+//                TiffOrientation.MIRROR_HORIZONTAL -> "scale(-1, 1)"
+//                TiffOrientation.UPSIDE_DOWN -> "rotate(180deg)"
+//                TiffOrientation.MIRROR_VERTICAL -> "scale(1, -1)"
+//                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT -> "rotate(-90deg) scale(1, -1)"
+//                TiffOrientation.ROTATE_RIGHT -> "rotate(90deg)"
+//                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> "rotate(90deg) scale(1, -1)"
+//                TiffOrientation.ROTATE_LEFT -> "rotate(-90deg)"
+//                else -> ""
+//            }
+//
+//            imageElement.style.transform = styleTransform
 
         } else {
 
