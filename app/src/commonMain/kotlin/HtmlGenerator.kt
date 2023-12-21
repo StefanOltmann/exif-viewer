@@ -159,9 +159,22 @@ fun ByteArray.toJpegHex(): String {
 
                 if (bytesOfLine.size == BYTES_PER_ROW || position == endPosition) {
 
+                    val remainingByteCount = BYTES_PER_ROW - bytesOfLine.size
+
+                    if (remainingByteCount > 0) {
+
+                        append(SPACE.repeat(remainingByteCount * 3))
+
+                        if (remainingByteCount > 8)
+                            append(SPACE)
+                    }
+
                     append("|$SPACE")
 
                     append(decodeBytesForHexView(bytesOfLine))
+
+                    if (remainingByteCount > 0)
+                        append(SPACE.repeat(remainingByteCount ))
 
                     append(SEPARATOR)
 
