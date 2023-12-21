@@ -13,6 +13,7 @@ private const val SPACE: String = "&nbsp;"
 private const val SEPARATOR: String = "$SPACE|$SPACE"
 
 private const val BYTES_PER_ROW: Int = 16
+private const val ROW_CHAR_LENGTH: Int = BYTES_PER_ROW * 3
 
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
@@ -162,6 +163,8 @@ fun ByteArray.toJpegHex(): String {
 
                     append(decodeBytesForHexView(bytesOfLine))
 
+                    append(SEPARATOR)
+
                     appendLine("<br>")
 
                     bytesOfLine.clear()
@@ -172,14 +175,23 @@ fun ByteArray.toJpegHex(): String {
                      */
                     if (segmentInfo.marker == JpegConstants.SOS_MARKER && position != endPosition) {
 
-                        append(SPACE.repeat(POS_COUNTER_LENGTH) + SEPARATOR)
+                        /* Skip to the end of the segment in the next iteration. */
+                        skipToPosition = endPosition - BYTES_PER_ROW + 1
 
-                        append("... snipped X bytes ...")
+                        val byteCountToSkip = skipToPosition - position - 1
+
+                        append(toPaddedPos(position) + SEPARATOR)
+
+                        append(centerMessageInLine("[ ... $byteCountToSkip bytes ... ]"))
+
+                        append(SPACE)
+                        append("|")
+                        append(SPACE.repeat(16 + 2))
+                        append("|")
+                        append(SPACE)
+                        append("Image data")
 
                         appendLine("<br>")
-
-                        /* Skip all the rest. */
-                        skipToPosition = endPosition - BYTES_PER_ROW + 1
                     }
                 }
             }
@@ -187,6 +199,16 @@ fun ByteArray.toJpegHex(): String {
 
         appendLine("</div>")
     }
+}
+
+private fun centerMessageInLine(message: String): String {
+
+    val neededWhitespace = ROW_CHAR_LENGTH - message.length
+
+    val whitespaceBefore = neededWhitespace / 2
+    val whitespaceAfter = ROW_CHAR_LENGTH - message.length - whitespaceBefore
+
+    return SPACE.repeat(whitespaceBefore) + message + SPACE.repeat(whitespaceAfter)
 }
 
 private fun toPaddedPos(pos: Long) =
