@@ -3,7 +3,11 @@ import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.tiff.TiffDirectory
 
+/* Show byte positions up to 99 MB. Hopefully that's enough. */
+private const val POS_COUNTER_LENGTH = 8
+
 private const val SPACE: String = "&nbsp;"
+private const val SEPERATOR: String = "$SPACE|$SPACE"
 
 private const val BYTES_PER_ROW: Int = 16
 
@@ -124,9 +128,15 @@ fun ByteArray.toJpegHex(): String {
 
         appendLine("<div style=\"font-family: monospace\">")
 
+        var position = 0
+
         var numbersInLine = 0
 
+        append(toPaddedPos(position) + SEPERATOR)
+
         for (byte in this@toJpegHex) {
+
+            position++
 
             append(byte.toHex().uppercase() + SPACE)
 
@@ -137,14 +147,20 @@ fun ByteArray.toJpegHex(): String {
                 append(SPACE)
 
             if (numbersInLine == BYTES_PER_ROW) {
+
                 appendLine("<br>")
                 numbersInLine = 0
+
+                append(toPaddedPos(position) + SEPERATOR)
             }
         }
 
         appendLine("</div>")
     }
 }
+
+private fun toPaddedPos(pos: Int) =
+    pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
 fun String.escapeHtmlSpecialChars(): String =
     this.replace("&", "&amp;")
