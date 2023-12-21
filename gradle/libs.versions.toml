@@ -1,6 +1,6 @@
 [versions]
 junit = "4.13.2"
-kotlin = "1.9.21"
+kotlin = "1.9.22"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
