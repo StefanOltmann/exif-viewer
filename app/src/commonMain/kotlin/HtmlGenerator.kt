@@ -139,6 +139,9 @@ fun ByteArray.toJpegHex(): String {
 
             var firstLineOfSegment = true
 
+            var onLineAfterApp1Segment = false
+            var onExifIdentifierLine = false
+
             for (position in segmentInfo.offset..endPosition) {
 
                 if (skipToPosition != null && position < skipToPosition)
@@ -165,12 +168,34 @@ fun ByteArray.toJpegHex(): String {
 
                 var breakLine = bytesOfLine.size == BYTES_PER_ROW || position == endPosition
 
+                if (onLineAfterApp1Segment && bytesOfLine.size == 6) {
+
+                    if (JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(bytesOfLine.toByteArray())) {
+
+                        /* We are on the EXIF identifier line. */
+                        onExifIdentifierLine = true
+
+                        /* We go in a new line now. */
+                        breakLine = true
+                    }
+
+                    onLineAfterApp1Segment = false
+                }
+
                 /* Break after FF E1 marker to have EXIF or XMP header on separate line. */
                 if (firstLineOfSegment &&
                     segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
-                    bytesOfLine.size == 2
+                    bytesOfLine.size == 4
                     ) {
+
+                    /* We go in a new line now. */
                     breakLine = true
+
+                    /*
+                     * We want to break again after the EXIF header.
+                     * Set for the next iteration.
+                     */
+                    onLineAfterApp1Segment = true
                 }
 
                 if (breakLine) {
@@ -202,6 +227,14 @@ fun ByteArray.toJpegHex(): String {
                         append("[${segmentInfo.length} bytes]")
 
                         firstLineOfSegment = false
+                    }
+
+                    if (onExifIdentifierLine) {
+
+                        append("EXIF Identifier")
+
+                        /* Reset for the next iteration. */
+                        onExifIdentifierLine = false
                     }
 
                     appendLine("<br>")
