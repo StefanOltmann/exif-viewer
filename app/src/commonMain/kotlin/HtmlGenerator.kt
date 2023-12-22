@@ -1,3 +1,4 @@
+import com.ashampoo.kim.common.slice
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
@@ -122,7 +123,7 @@ fun ImageMetadata.toXmpHtmlString(): String =
     }
 
 data class LabeledSlice(
-    val range: LongRange,
+    val range: IntRange,
     val label: String,
     val emphasisOnFirstBytes: Boolean,
     val skipBytes: Boolean
@@ -136,17 +137,50 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
         for (segmentInfo in segmentInfos) {
 
-            val endPosition = segmentInfo.offset + segmentInfo.length - 1
+            val startPosition = segmentInfo.offset.toInt()
+            val endPosition = startPosition + segmentInfo.length - 1
 
-            slices.add(
-                LabeledSlice(
-                    range = segmentInfo.offset..endPosition,
-                    label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
-                      "[${segmentInfo.length} bytes]",
-                    emphasisOnFirstBytes = true,
-                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+            /*
+             * The EXIF segment is an APP1 segment that starts with the EXIF identifier code.
+             */
+            val isExifSegment = segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
+                JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(
+                    this.slice(
+                        startIndex = startPosition + 4,
+                        count = JpegConstants.EXIF_IDENTIFIER_CODE.size
+                    )
                 )
-            )
+
+            if (isExifSegment) {
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition..endPosition,
+                        label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
+                            "[${segmentInfo.length} bytes]",
+                        emphasisOnFirstBytes = true,
+                        skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+                    )
+                )
+
+//                TiffReader.read(
+//                    ByteArrayByteReader(
+//                        this.sliceArray(segmentInfo.offset.toInt()..endPosition.toInt())
+//                    )
+//                )
+
+            } else {
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition..endPosition,
+                        label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
+                            "[${segmentInfo.length} bytes]",
+                        emphasisOnFirstBytes = true,
+                        skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+                    )
+                )
+            }
         }
 
     return slices
@@ -164,7 +198,7 @@ fun ByteArray.toJpegHex(): String {
 
             val bytesOfLine = mutableListOf<Byte>()
 
-            var skipToPosition: Long? = null
+            var skipToPosition: Int? = null
 
             var firstLineOfSegment = true
 
@@ -175,7 +209,7 @@ fun ByteArray.toJpegHex(): String {
                 else
                     skipToPosition = null
 
-                val byte = this@toJpegHex[position.toInt()]
+                val byte = this@toJpegHex[position]
 
                 if (bytesOfLine.isEmpty())
                     append(toPaddedPos(position) + SEPARATOR)
@@ -267,18 +301,18 @@ fun ByteArray.toJpegHexOld(): String {
 
         for (segmentInfo in segmentInfos) {
 
-            val endPosition = segmentInfo.offset + segmentInfo.length - 1
+            val endPosition = segmentInfo.offset.toInt() + segmentInfo.length - 1
 
             val bytesOfLine = mutableListOf<Byte>()
 
-            var skipToPosition: Long? = null
+            var skipToPosition: Int? = null
 
             var firstLineOfSegment = true
 
             var onLineAfterApp1Segment = false
             var onExifIdentifierLine = false
 
-            for (position in segmentInfo.offset..endPosition) {
+            for (position in segmentInfo.offset.toInt()..endPosition.toInt()) {
 
                 if (skipToPosition != null && position < skipToPosition)
                     continue
@@ -419,7 +453,7 @@ private fun centerMessageInLine(message: String): String {
     return SPACE.repeat(whitespaceBefore) + message + SPACE.repeat(whitespaceAfter)
 }
 
-private fun toPaddedPos(pos: Long) =
+private fun toPaddedPos(pos: Int) =
     pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
 fun String.escapeHtmlSpecialChars(): String =
