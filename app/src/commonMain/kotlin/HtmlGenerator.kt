@@ -159,11 +159,21 @@ fun ByteArray.toJpegHex(): String {
                 else
                     append(byte.toHex().uppercase() + SPACE)
 
-                /* Extra spacing */
+                /* Extra spacing in the middle to have two pairs of 8 bytes. */
                 if (bytesOfLine.size == BYTES_PER_ROW / 2)
                     append(SPACE)
 
-                if (bytesOfLine.size == BYTES_PER_ROW || position == endPosition) {
+                var breakLine = bytesOfLine.size == BYTES_PER_ROW || position == endPosition
+
+                /* Break after FF E1 marker to have EXIF or XMP header on separate line. */
+                if (firstLineOfSegment &&
+                    segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
+                    bytesOfLine.size == 2
+                    ) {
+                    breakLine = true
+                }
+
+                if (breakLine) {
 
                     val remainingByteCount = BYTES_PER_ROW - bytesOfLine.size
 
