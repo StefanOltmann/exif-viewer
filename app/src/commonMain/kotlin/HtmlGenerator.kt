@@ -137,7 +137,7 @@ fun ByteArray.toJpegHex(): String {
 
             var skipToPosition: Long? = null
 
-            var writeSegmentMarkerInfo: Boolean = true
+            var firstLineOfSegment = true
 
             for (position in segmentInfo.offset..endPosition) {
 
@@ -153,7 +153,11 @@ fun ByteArray.toJpegHex(): String {
 
                 bytesOfLine.add(byte)
 
-                append(byte.toHex().uppercase() + SPACE)
+                /* Emphasis on the marker bytes. */
+                if (firstLineOfSegment && bytesOfLine.size <= 2)
+                    append("<b>" + byte.toHex().uppercase() + "</b>" + SPACE)
+                else
+                    append(byte.toHex().uppercase() + SPACE)
 
                 /* Extra spacing */
                 if (bytesOfLine.size == BYTES_PER_ROW / 2)
@@ -176,14 +180,18 @@ fun ByteArray.toJpegHex(): String {
                     append(decodeBytesForHexView(bytesOfLine))
 
                     if (remainingByteCount > 0)
-                        append(SPACE.repeat(remainingByteCount ))
+                        append(SPACE.repeat(remainingByteCount))
 
                     append(SEPARATOR)
 
                     /* Write segment marker info on the line where it started. */
-                    if (writeSegmentMarkerInfo) {
+                    if (firstLineOfSegment) {
+
                         append(JpegConstants.markerDescription(segmentInfo.marker))
-                        writeSegmentMarkerInfo = false
+                        append(SPACE)
+                        append("[${segmentInfo.length} bytes]")
+
+                        firstLineOfSegment = false
                     }
 
                     appendLine("<br>")
