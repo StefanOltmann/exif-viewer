@@ -164,6 +164,13 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
             val tiffHeader = tiffContents.header
 
+            val exifHeaderStartPos = startPosition + 4
+            val exifHeaderEndPos = exifHeaderStartPos + JpegConstants.EXIF_IDENTIFIER_CODE.size
+
+            val tiffHeaderStartPos = exifHeaderEndPos
+            val tiffHeaderEndPos = tiffHeaderStartPos + TiffConstants.TIFF_HEADER_SIZE
+
+            /* APP1 Header */
             slices.add(
                 LabeledSlice(
                     range = startPosition until startPosition + 4,
@@ -174,12 +181,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 )
             )
 
-            val exifHeaderStartPos = startPosition + 4
-            val exifHeaderEndPos = exifHeaderStartPos + JpegConstants.EXIF_IDENTIFIER_CODE.size
-
-            val tiffHeaderStartPos = exifHeaderEndPos
-            val tiffHeaderEndPos = tiffHeaderStartPos + TiffConstants.TIFF_HEADER_SIZE
-
+            /* EXIF Identifier */
             slices.add(
                 LabeledSlice(
                     range = exifHeaderStartPos until exifHeaderEndPos,
@@ -189,14 +191,44 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 )
             )
 
+            /* TIFF Header */
             slices.add(
                 LabeledSlice(
                     range = tiffHeaderStartPos until tiffHeaderEndPos,
-                    label = "TIFF Header (${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name})".escapeSpaces(),
+                    label = "TIFF Header v${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name}".escapeSpaces(),
                     emphasisOnFirstBytes = false,
                     skipBytes = false
                 )
             )
+
+//            val fieldSlices = mutableListOf<LabeledSlice>()
+//
+//            for (directory in tiffContents.directories) {
+//
+//                for (field in directory.entries) {
+//
+//                    val offset = field.offset.toInt() + 40
+//
+//                    println(field.toString() + " = " + field.offset)
+//
+//                    fieldSlices.add(
+//                        LabeledSlice(
+//                            range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
+//                            label = field.tagInfo.toString() + SPACE + "=" + SPACE + field.valueDescription,
+//                            emphasisOnFirstBytes = false,
+//                            skipBytes = false
+//                        )
+//                    )
+//
+//                    break
+//                }
+//
+//                break
+//            }
+//
+//            println(fieldSlices)
+//
+//            slices.addAll(fieldSlices)
 
             slices.add(
                 LabeledSlice(
@@ -213,7 +245,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 LabeledSlice(
                     range = startPosition until endPosition,
                     label = JpegConstants.markerDescription(segmentInfo.marker).escapeSpaces()
-                        + SPACE + "[v${segmentInfo.length}" + SPACE + "bytes]",
+                        + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = true,
                     skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
                 )
