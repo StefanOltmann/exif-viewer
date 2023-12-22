@@ -5,6 +5,8 @@ import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
 import com.ashampoo.kim.format.tiff.TiffDirectory
+import com.ashampoo.kim.format.tiff.TiffReader
+import com.ashampoo.kim.format.tiff.constants.TiffConstants
 import com.ashampoo.kim.input.ByteArrayByteReader
 
 /* Show byte positions up to 99 MB. Hopefully that's enough. */
@@ -135,53 +137,89 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
-        for (segmentInfo in segmentInfos) {
+    for (segmentInfo in segmentInfos) {
 
-            val startPosition = segmentInfo.offset.toInt()
-            val endPosition = startPosition + segmentInfo.length - 1
+        val startPosition = segmentInfo.offset.toInt()
+        val endPosition = startPosition + segmentInfo.length
 
-            /*
-             * The EXIF segment is an APP1 segment that starts with the EXIF identifier code.
-             */
-            val isExifSegment = segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
-                JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(
-                    this.slice(
-                        startIndex = startPosition + 4,
-                        count = JpegConstants.EXIF_IDENTIFIER_CODE.size
-                    )
+        /*
+         * The EXIF segment is an APP1 segment that starts with the EXIF identifier code.
+         */
+        val isExifSegment = segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
+            JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(
+                this.slice(
+                    startIndex = startPosition + 4,
+                    count = JpegConstants.EXIF_IDENTIFIER_CODE.size
                 )
+            )
 
-            if (isExifSegment) {
+        if (isExifSegment) {
 
-                slices.add(
-                    LabeledSlice(
-                        range = startPosition..endPosition,
-                        label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
-                            "[${segmentInfo.length} bytes]",
-                        emphasisOnFirstBytes = true,
-                        skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
-                    )
+            val exifBytes = this.slice(
+                startIndex = startPosition + 4 + JpegConstants.EXIF_IDENTIFIER_CODE.size,
+                count = segmentInfo.length - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
+            )
+
+            val tiffContents = TiffReader.read(ByteArrayByteReader(exifBytes))
+
+            val tiffHeader = tiffContents.header
+
+            slices.add(
+                LabeledSlice(
+                    range = startPosition until startPosition + 4,
+                    label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
+                        "[${segmentInfo.length}" + SPACE + "bytes]",
+                    emphasisOnFirstBytes = true,
+                    skipBytes = false
                 )
+            )
 
-//                TiffReader.read(
-//                    ByteArrayByteReader(
-//                        this.sliceArray(segmentInfo.offset.toInt()..endPosition.toInt())
-//                    )
-//                )
+            val exifHeaderStartPos = startPosition + 4
+            val exifHeaderEndPos = exifHeaderStartPos + JpegConstants.EXIF_IDENTIFIER_CODE.size
 
-            } else {
+            val tiffHeaderStartPos = exifHeaderEndPos
+            val tiffHeaderEndPos = tiffHeaderStartPos + TiffConstants.TIFF_HEADER_SIZE
 
-                slices.add(
-                    LabeledSlice(
-                        range = startPosition..endPosition,
-                        label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
-                            "[${segmentInfo.length} bytes]",
-                        emphasisOnFirstBytes = true,
-                        skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
-                    )
+            slices.add(
+                LabeledSlice(
+                    range = exifHeaderStartPos until exifHeaderEndPos,
+                    label = "EXIF" + SPACE + "Identifier",
+                    emphasisOnFirstBytes = false,
+                    skipBytes = false
                 )
-            }
+            )
+
+            slices.add(
+                LabeledSlice(
+                    range = tiffHeaderStartPos until tiffHeaderEndPos,
+                    label = "TIFF Header (${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name})".escapeSpaces(),
+                    emphasisOnFirstBytes = false,
+                    skipBytes = false
+                )
+            )
+
+            slices.add(
+                LabeledSlice(
+                    range = tiffHeaderEndPos..endPosition,
+                    label = "rest",
+                    emphasisOnFirstBytes = false,
+                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+                )
+            )
+
+        } else {
+
+            slices.add(
+                LabeledSlice(
+                    range = startPosition until endPosition,
+                    label = JpegConstants.markerDescription(segmentInfo.marker).escapeSpaces()
+                        + SPACE + "[v${segmentInfo.length}" + SPACE + "bytes]",
+                    emphasisOnFirstBytes = true,
+                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+                )
+            )
         }
+    }
 
     return slices
 }
@@ -291,158 +329,6 @@ fun ByteArray.toJpegHex(): String {
     }
 }
 
-fun ByteArray.toJpegHexOld(): String {
-
-    val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
-
-    return buildString {
-
-        appendLine("<div style=\"font-family: monospace\">")
-
-        for (segmentInfo in segmentInfos) {
-
-            val endPosition = segmentInfo.offset.toInt() + segmentInfo.length - 1
-
-            val bytesOfLine = mutableListOf<Byte>()
-
-            var skipToPosition: Int? = null
-
-            var firstLineOfSegment = true
-
-            var onLineAfterApp1Segment = false
-            var onExifIdentifierLine = false
-
-            for (position in segmentInfo.offset.toInt()..endPosition.toInt()) {
-
-                if (skipToPosition != null && position < skipToPosition)
-                    continue
-                else
-                    skipToPosition = null
-
-                val byte = this@toJpegHexOld[position.toInt()]
-
-                if (bytesOfLine.isEmpty())
-                    append(toPaddedPos(position) + SEPARATOR)
-
-                bytesOfLine.add(byte)
-
-                /* Emphasis on the marker bytes. */
-                if (firstLineOfSegment && bytesOfLine.size <= 2)
-                    append("<b>" + byte.toHex().uppercase() + "</b>" + SPACE)
-                else
-                    append(byte.toHex().uppercase() + SPACE)
-
-                /* Extra spacing in the middle to have two pairs of 8 bytes. */
-                if (bytesOfLine.size == BYTES_PER_ROW / 2)
-                    append(SPACE)
-
-                var breakLine = bytesOfLine.size == BYTES_PER_ROW || position == endPosition
-
-                if (onLineAfterApp1Segment && bytesOfLine.size == 6) {
-
-                    if (JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(bytesOfLine.toByteArray())) {
-
-                        /* We are on the EXIF identifier line. */
-                        onExifIdentifierLine = true
-
-                        /* We go in a new line now. */
-                        breakLine = true
-                    }
-
-                    onLineAfterApp1Segment = false
-                }
-
-                /* Break after FF E1 marker to have EXIF or XMP header on separate line. */
-                if (firstLineOfSegment &&
-                    segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
-                    bytesOfLine.size == 4
-                    ) {
-
-                    /* We go in a new line now. */
-                    breakLine = true
-
-                    /*
-                     * We want to break again after the EXIF header.
-                     * Set for the next iteration.
-                     */
-                    onLineAfterApp1Segment = true
-                }
-
-                if (breakLine) {
-
-                    val remainingByteCount = BYTES_PER_ROW - bytesOfLine.size
-
-                    if (remainingByteCount > 0) {
-
-                        append(SPACE.repeat(remainingByteCount * 3))
-
-                        if (remainingByteCount > 8)
-                            append(SPACE)
-                    }
-
-                    append("|$SPACE")
-
-                    append(decodeBytesForHexView(bytesOfLine))
-
-                    if (remainingByteCount > 0)
-                        append(SPACE.repeat(remainingByteCount))
-
-                    append(SEPARATOR)
-
-                    /* Write segment marker info on the line where it started. */
-                    if (firstLineOfSegment) {
-
-                        append(JpegConstants.markerDescription(segmentInfo.marker))
-                        append(SPACE)
-                        append("[${segmentInfo.length} bytes]")
-
-                        firstLineOfSegment = false
-                    }
-
-                    if (onExifIdentifierLine) {
-
-                        append("EXIF Identifier")
-
-                        /* Reset for the next iteration. */
-                        onExifIdentifierLine = false
-                    }
-
-                    appendLine("<br>")
-
-                    bytesOfLine.clear()
-
-                    /*
-                     * Start of Scan contains image data and is very long. We want to skip
-                     * all these data which are not useful for a metadata hex dump.
-                     */
-                    if (segmentInfo.marker == JpegConstants.SOS_MARKER && position != endPosition) {
-
-                        /* Skip to the end of the segment in the next iteration. */
-                        skipToPosition = endPosition - BYTES_PER_ROW + 1
-
-                        val byteCountToSkip = skipToPosition - position - 1
-
-                        append(toPaddedPos(position) + SEPARATOR)
-
-                        append(centerMessageInLine("[ ... $byteCountToSkip bytes ... ]"))
-
-                        append(SPACE)
-                        append("|")
-                        append(SPACE.repeat(16 + 2))
-                        append("|")
-                        append(SPACE)
-                        append("Image data")
-
-                        appendLine("<br>")
-                    }
-                }
-            }
-        }
-
-        appendLine("</div>")
-    }
-}
-
 private fun centerMessageInLine(message: String): String {
 
     val neededWhitespace = ROW_CHAR_LENGTH - message.length
@@ -456,11 +342,14 @@ private fun centerMessageInLine(message: String): String {
 private fun toPaddedPos(pos: Int) =
     pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
-fun String.escapeHtmlSpecialChars(): String =
-    this.replace("&", "&amp;")
+private fun String.escapeHtmlSpecialChars(): String =
+    this.escapeSpaces()
+        .replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
-        .replace(" ", SPACE)
+
+private fun String.escapeSpaces(): String =
+    this.replace(" ", SPACE)
 
 @Suppress("MagicNumber")
 private fun decodeBytesForHexView(bytes: List<Byte>): String =
