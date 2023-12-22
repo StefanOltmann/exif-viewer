@@ -121,7 +121,143 @@ fun ImageMetadata.toXmpHtmlString(): String =
         )
     }
 
+data class LabeledSlice(
+    val range: LongRange,
+    val label: String,
+    val emphasisOnFirstBytes: Boolean,
+    val skipBytes: Boolean
+)
+
+fun ByteArray.toJpegSlices(): List<LabeledSlice> {
+
+    val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
+
+    val slices = mutableListOf<LabeledSlice>()
+
+        for (segmentInfo in segmentInfos) {
+
+            val endPosition = segmentInfo.offset + segmentInfo.length - 1
+
+            slices.add(
+                LabeledSlice(
+                    range = segmentInfo.offset..endPosition,
+                    label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
+                      "[${segmentInfo.length} bytes]",
+                    emphasisOnFirstBytes = true,
+                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+                )
+            )
+        }
+
+    return slices
+}
+
 fun ByteArray.toJpegHex(): String {
+
+    val slices = this.toJpegSlices()
+
+    return buildString {
+
+        appendLine("<div style=\"font-family: monospace\">")
+
+        for (slice in slices) {
+
+            val bytesOfLine = mutableListOf<Byte>()
+
+            var skipToPosition: Long? = null
+
+            var firstLineOfSegment = true
+
+            for (position in slice.range) {
+
+                if (skipToPosition != null && position < skipToPosition)
+                    continue
+                else
+                    skipToPosition = null
+
+                val byte = this@toJpegHex[position.toInt()]
+
+                if (bytesOfLine.isEmpty())
+                    append(toPaddedPos(position) + SEPARATOR)
+
+                bytesOfLine.add(byte)
+
+                /* Emphasis on the marker bytes. */
+                if (firstLineOfSegment && slice.emphasisOnFirstBytes && bytesOfLine.size <= 2)
+                    append("<b>" + byte.toHex().uppercase() + "</b>" + SPACE)
+                else
+                    append(byte.toHex().uppercase() + SPACE)
+
+                /* Extra spacing in the middle to have two pairs of 8 bytes. */
+                if (bytesOfLine.size == BYTES_PER_ROW / 2)
+                    append(SPACE)
+
+                if (bytesOfLine.size == BYTES_PER_ROW || position == slice.range.last) {
+
+                    val remainingByteCount = BYTES_PER_ROW - bytesOfLine.size
+
+                    if (remainingByteCount > 0) {
+
+                        append(SPACE.repeat(remainingByteCount * 3))
+
+                        if (remainingByteCount > 8)
+                            append(SPACE)
+                    }
+
+                    append("|$SPACE")
+
+                    append(decodeBytesForHexView(bytesOfLine))
+
+                    if (remainingByteCount > 0)
+                        append(SPACE.repeat(remainingByteCount))
+
+                    append(SEPARATOR)
+
+                    /* Write segment marker info on the line where it started. */
+                    if (firstLineOfSegment) {
+
+                        append(slice.label)
+
+                        firstLineOfSegment = false
+                    }
+
+                    appendLine("<br>")
+
+                    bytesOfLine.clear()
+
+                    /*
+                     * Start of Scan contains image data and is very long. We want to skip
+                     * all these data which are not useful for a metadata hex dump.
+                     */
+                    if (slice.skipBytes && position != slice.range.last) {
+
+                        /* Skip to the end of the segment in the next iteration. */
+                        skipToPosition = slice.range.last - BYTES_PER_ROW + 1
+
+                        val byteCountToSkip = skipToPosition - position - 1
+
+                        append(toPaddedPos(position) + SEPARATOR)
+
+                        append(centerMessageInLine("[ ... $byteCountToSkip bytes ... ]"))
+
+                        append(SPACE)
+                        append("|")
+                        append(SPACE.repeat(16 + 2))
+                        append("|")
+                        append(SPACE)
+                        append("Image data")
+
+                        appendLine("<br>")
+                    }
+                }
+            }
+        }
+
+        appendLine("</div>")
+    }
+}
+
+fun ByteArray.toJpegHexOld(): String {
 
     val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
 
@@ -149,7 +285,7 @@ fun ByteArray.toJpegHex(): String {
                 else
                     skipToPosition = null
 
-                val byte = this@toJpegHex[position.toInt()]
+                val byte = this@toJpegHexOld[position.toInt()]
 
                 if (bytesOfLine.isEmpty())
                     append(toPaddedPos(position) + SEPARATOR)
