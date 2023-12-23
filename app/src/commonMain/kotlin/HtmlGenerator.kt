@@ -298,7 +298,8 @@ private fun ByteArray.toTiffSlices(
                         range = adjValueOffset until adjValueOffset + field.valueBytes.size,
                         label = "${field.tagInfo.name} value".escapeSpaces(),
                         emphasisOnFirstBytes = false,
-                        skipBytes = false
+                        /* Skip long value fields like Maker Note or XMP (in TIFF) */
+                        skipBytes = field.valueBytes.size > BYTES_PER_ROW * 2
                     )
                 )
             }
