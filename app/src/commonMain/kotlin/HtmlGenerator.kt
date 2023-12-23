@@ -1,8 +1,6 @@
 import com.ashampoo.kim.common.slice
-import com.ashampoo.kim.common.startsWith
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
-import com.ashampoo.kim.format.ImageFormatMagicNumbers
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
@@ -10,6 +8,7 @@ import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.format.tiff.TiffReader
 import com.ashampoo.kim.format.tiff.constants.TiffConstants
 import com.ashampoo.kim.input.ByteArrayByteReader
+import com.ashampoo.kim.model.ImageFormat
 
 /* Show byte positions up to 99 MB. Hopefully that's enough. */
 private const val POS_COUNTER_LENGTH = 8
@@ -137,10 +136,16 @@ data class LabeledSlice(
 
 fun ByteArray.toHexHtml(): String {
 
-    if (this.startsWith(ImageFormatMagicNumbers.jpeg))
+    val format = ImageFormat.detect(this) ?:
+        return "Image format was not recognized."
+
+    if (format == ImageFormat.JPEG)
         return generateHtmlFromSlices(this, this.toJpegSlices())
 
-    return "At this time only supported for JPG."
+    if (format == ImageFormat.TIFF)
+        return generateHtmlFromSlices(this, this.toTiffSlices())
+
+    return "At this time $format is not supported."
 }
 
 private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
@@ -322,12 +327,14 @@ private fun ByteArray.toTiffSlices(
 
         if (subSlice.range.first > lastSliceEnd + 1) {
 
+            val byteCount = subSlice.range.first - lastSliceEnd - 1
+
             slices.add(
                 LabeledSlice(
                     range = lastSliceEnd + 1 until subSlice.range.first,
-                    label = "[padding]",
+                    label = if (byteCount == 1) "[pad byte]" else "[unknown $byteCount bytes]",
                     emphasisOnFirstBytes = false,
-                    skipBytes = false
+                    skipBytes = byteCount > BYTES_PER_ROW * 2
                 )
             )
         }
@@ -345,9 +352,9 @@ private fun ByteArray.toTiffSlices(
         slices.add(
             LabeledSlice(
                 range = endOfLastSubSlice + 1 until endPosition,
-                label = "[padding]",
+                label = if (trailingByteCount == 1) "[pad byte]" else "[unknown $trailingByteCount bytes]",
                 emphasisOnFirstBytes = false,
-                skipBytes = false
+                skipBytes = trailingByteCount > 2 * BYTES_PER_ROW
             )
         )
     }
