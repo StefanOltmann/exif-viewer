@@ -336,7 +336,7 @@ fun ByteArray.toJpegHex(): String {
 
                         append(SPACE.repeat(remainingByteCount * 3))
 
-                        if (remainingByteCount > 8)
+                        if (remainingByteCount > BYTES_PER_ROW / 2)
                             append(SPACE)
                     }
 
