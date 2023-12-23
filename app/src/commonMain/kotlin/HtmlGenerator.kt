@@ -145,7 +145,7 @@ fun ByteArray.toHexHtml(): String {
     if (format == ImageFormat.TIFF)
         return generateHtmlFromSlices(this, this.toTiffSlices())
 
-    return "At this time $format is not supported."
+    return "HEX view for $format is not (yet) supported."
 }
 
 private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
@@ -216,8 +216,8 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                     label = JpegConstants.markerDescription(segmentInfo.marker).escapeSpaces()
                         + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = true,
-                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER ||
-                        segmentInfo.marker == JpegConstants.JPEG_APP2_MARKER
+                    /* Skip everything that is too long. */
+                    skipBytes = segmentInfo.length > BYTES_PER_ROW * 2
                 )
             )
         }
