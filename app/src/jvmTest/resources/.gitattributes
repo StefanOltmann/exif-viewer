@@ -1,0 +1,3 @@
+# Git should not touch files
+# It always tries to change line feeds, but that's problematic for XMP
+*.* binary

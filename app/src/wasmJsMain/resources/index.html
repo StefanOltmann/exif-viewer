@@ -30,6 +30,7 @@
             display: block;
             padding: .5em;
             overflow: auto;
+            font-size: 1em;
         }
 
         #hex {
@@ -50,12 +51,12 @@
         table {
             border-collapse: collapse;
             border: 1px solid #eeeeee;
-            padding: .5em;
+            padding: .3em;
         }
 
         th, td {
             border: 1px solid #eeeeee;
-            padding: .5em;
+            padding: .3em;
         }
 
         #dropbox {
@@ -78,7 +79,7 @@
 
         #warning {
             background-color: yellow;
-            font-size: initial;
+            font-size: small;
             display: none;
             padding: 1em;
             margin: 1em;
@@ -91,6 +92,12 @@
         #thumbnail {
             margin: 0 auto;
         }
+
+        #link {
+            margin-top: 1em;
+            text-align: center;
+            font-size: small;
+        }
     </style>
 </head>
 
@@ -101,7 +108,7 @@
 </div>
 
 <center>
-    <div id="warning">⚠️ Your browser does not (fully) support WebAssembly. ⚠️</div>
+    <div id="warning">⚠️ Your browser is not supported. ⚠️</div>
 </center>
 
 <div id="dropbox">
@@ -150,13 +157,13 @@
 
 <div id="hex-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('hex-box')">
-        File structure (byte level HEX view)
+        File structure (HEX view)
         <i class="fas fa-chevron-down expand-icon"></i>
     </div>
     <div class="box-content" id="hex"></div>
 </div>
 
-<div style="text-align: center; margin-top: 20px;">
+<div id="link">
     <p>
         <a href="https://github.com/StefanOltmann/exif-viewer"
            style="color: #333333; text-decoration: none" target="_blank">
