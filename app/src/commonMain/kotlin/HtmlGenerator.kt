@@ -350,7 +350,7 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-        appendLine("<div style=\"font-family: monospace\">")
+        appendLine("<div style=\"font-family: monospace; font-size: 10pt\">")
 
         for (slice in slices) {
 
