@@ -18,6 +18,8 @@ private const val SEPARATOR: String = "$SPACE|$SPACE"
 private const val BYTES_PER_ROW: Int = 16
 private const val ROW_CHAR_LENGTH: Int = BYTES_PER_ROW * 3
 
+private const val SHOW_HTML_OFFSETS_AS_HEX: Boolean = true
+
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
 
@@ -209,8 +211,6 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
                     val offset = field.offset + tiffHeaderStartPos
 
-                    println(field.toString() + " = " + field.offset)
-
                     subSlices.add(
                         LabeledSlice(
                             range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
@@ -234,8 +234,8 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
                     subSlices.add(
                         LabeledSlice(
-                            range = lastSliceEnd until subSlice.range.first,
-                            label = "GAP $lastSliceEnd -> ${subSlice.range.first}",
+                            range = lastSliceEnd + 1 until subSlice.range.first,
+                            label = "",
                             emphasisOnFirstBytes = false,
                             skipBytes = false
                         )
@@ -245,22 +245,30 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 lastSliceEnd = subSlice.range.last
             }
 
+            val endOfLastSubSlice = subSlices.maxOf { it.range.last }
+
+            val trailingByteCount = endPosition - endOfLastSubSlice - 1
+
+            println("Trailing: $trailingByteCount")
+
             /* Add the final gab. */
+            if (trailingByteCount > 0) {
+
+                subSlices.add(
+                    LabeledSlice(
+                        range = endOfLastSubSlice + 1 until endPosition,
+                        label = "",
+                        emphasisOnFirstBytes = false,
+                        skipBytes = false
+                    )
+                )
+            }
 
             /* Sort in offset order. */
             subSlices.sortBy { it.range.first }
 
             /* Add all to the result. */
             slices.addAll(subSlices)
-
-//            slices.add(
-//                LabeledSlice(
-//                    range = tiffHeaderEndPos..endPosition,
-//                    label = "rest",
-//                    emphasisOnFirstBytes = false,
-//                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
-//                )
-//            )
 
         } else {
 
@@ -394,8 +402,12 @@ private fun centerMessageInLine(message: String): String {
     return SPACE.repeat(whitespaceBefore) + message + SPACE.repeat(whitespaceAfter)
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 private fun toPaddedPos(pos: Int) =
-    pos.toString().padStart(POS_COUNTER_LENGTH, '0')
+    if (SHOW_HTML_OFFSETS_AS_HEX)
+        pos.toHexString()
+    else
+        pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
 private fun String.escapeHtmlSpecialChars(): String =
     this.replace("&", "&amp;")
