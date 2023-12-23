@@ -394,8 +394,6 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-    appendLine("<div style=\"font-family: monospace; font-size: 10pt\">")
-
     for (slice in slices) {
 
         val bytesOfLine = mutableListOf<Byte>()
@@ -486,8 +484,6 @@ private fun generateHtmlFromSlices(
             }
         }
     }
-
-    appendLine("</div>")
 }
 
 private fun centerMessageInLine(message: String): String {
