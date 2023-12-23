@@ -131,7 +131,7 @@ data class LabeledSlice(
     val range: IntRange,
     val label: String,
     val emphasisOnFirstBytes: Boolean,
-    val skipBytes: Boolean
+    val snipBytes: Boolean
 )
 
 fun ByteArray.toHexHtml(): String {
@@ -183,7 +183,7 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                     label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
                         "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = true,
-                    skipBytes = false
+                    snipBytes = false
                 )
             )
 
@@ -196,7 +196,7 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                     range = exifHeaderStartPos until exifHeaderEndPos,
                     label = "EXIF" + SPACE + "Identifier",
                     emphasisOnFirstBytes = false,
-                    skipBytes = false
+                    snipBytes = false
                 )
             )
 
@@ -216,7 +216,7 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                         + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = true,
                     /* Skip everything that is too long. */
-                    skipBytes = segmentInfo.length > BYTES_PER_ROW * 2
+                    snipBytes = segmentInfo.length > BYTES_PER_ROW * 2
                 )
             )
         }
@@ -247,7 +247,7 @@ private fun ByteArray.toTiffSlices(
             range = startPosition until tiffHeaderEndPos,
             label = "TIFF Header v${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name}".escapeSpaces(),
             emphasisOnFirstBytes = false,
-            skipBytes = false
+            snipBytes = false
         )
     )
 
@@ -269,7 +269,7 @@ private fun ByteArray.toTiffSlices(
                     range = offset until offset + it.length,
                     label = "[$directoryDescription thumbnail: ${it.length} bytes]".escapeSpaces(),
                     emphasisOnFirstBytes = false,
-                    skipBytes = it.length > BYTES_PER_ROW * 2
+                    snipBytes = it.length > BYTES_PER_ROW * 2
                 )
             )
         }
@@ -280,7 +280,7 @@ private fun ByteArray.toTiffSlices(
                 label = ("$directoryDescription [${directory.entries.size} entries]")
                     .escapeSpaces(),
                 emphasisOnFirstBytes = false,
-                skipBytes = false
+                snipBytes = false
             )
         )
 
@@ -292,17 +292,22 @@ private fun ByteArray.toTiffSlices(
                 it + startPosition
             }
 
+            val labelBase = "$directoryDescription-" +
+                "${field.sortHint.toString().padStart(2, '0')} " +
+                "${field.tagFormatted} " +
+                field.tagInfo.name
+
             val label = if (adjustedValueOffset != null)
-                "${field.tagFormatted}$SPACE${field.tagInfo.name}$SPACE(&rarr;$adjustedValueOffset)"
+                "$labelBase$SPACE(&rarr;$adjustedValueOffset)".escapeSpaces()
             else
-                "${field.tagFormatted} ${field.tagInfo.name}".escapeSpaces()
+                labelBase.escapeSpaces()
 
             slices.add(
                 LabeledSlice(
                     range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
                     label = label,
                     emphasisOnFirstBytes = false,
-                    skipBytes = false
+                    snipBytes = false
                 )
             )
 
@@ -316,7 +321,7 @@ private fun ByteArray.toTiffSlices(
                         label = "${field.tagInfo.name} value".escapeSpaces(),
                         emphasisOnFirstBytes = false,
                         /* Skip long value fields like Maker Note or XMP (in TIFF) */
-                        skipBytes = field.valueBytes.size > BYTES_PER_ROW * 2
+                        snipBytes = field.valueBytes.size > BYTES_PER_ROW * 3
                     )
                 )
             }
@@ -330,7 +335,7 @@ private fun ByteArray.toTiffSlices(
                 range = nextIfdOffset until nextIfdOffset + 4,
                 label = "Next IFD offset".escapeSpaces(),
                 emphasisOnFirstBytes = false,
-                skipBytes = false
+                snipBytes = false
             )
         )
     }
@@ -352,7 +357,7 @@ private fun ByteArray.toTiffSlices(
                     range = lastSliceEnd + 1 until subSlice.range.first,
                     label = if (byteCount == 1) "[pad byte]" else "[unknown $byteCount bytes]",
                     emphasisOnFirstBytes = false,
-                    skipBytes = byteCount > BYTES_PER_ROW * 2
+                    snipBytes = byteCount > BYTES_PER_ROW * 2
                 )
             )
         }
@@ -372,7 +377,7 @@ private fun ByteArray.toTiffSlices(
                 range = endOfLastSubSlice + 1 until endPosition,
                 label = if (trailingByteCount == 1) "[pad byte]" else "[unknown $trailingByteCount bytes]",
                 emphasisOnFirstBytes = false,
-                skipBytes = trailingByteCount > 2 * BYTES_PER_ROW
+                snipBytes = trailingByteCount > 2 * BYTES_PER_ROW
             )
         )
     }
@@ -460,7 +465,7 @@ private fun generateHtmlFromSlices(
                  * Start of Scan contains image data and is very long. We want to skip
                  * all these data which are not useful for a metadata hex dump.
                  */
-                if (slice.skipBytes && position != slice.range.last) {
+                if (slice.snipBytes && position != slice.range.last) {
 
                     /* Skip to the end of the segment in the next iteration. */
                     skipToPosition = slice.range.last - BYTES_PER_ROW + 1
@@ -469,7 +474,7 @@ private fun generateHtmlFromSlices(
 
                     append(toPaddedPos(position) + SEPARATOR)
 
-                    append(centerMessageInLine("[ ... $byteCountToSkip bytes ... ]"))
+                    append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
 
                     append(SPACE)
                     append("|")
