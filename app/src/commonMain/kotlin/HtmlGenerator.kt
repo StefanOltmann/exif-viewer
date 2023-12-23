@@ -219,6 +219,20 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                             skipBytes = false
                         )
                     )
+
+                    field.valueOffset?.let { valueOffset ->
+
+                        val adjustedValueOffset = valueOffset + tiffHeaderStartPos
+
+                        subSlices.add(
+                            LabeledSlice(
+                                range = adjustedValueOffset until adjustedValueOffset + field.valueBytes.size,
+                                label = "${field.tagInfo.name} value".escapeSpaces(),
+                                emphasisOnFirstBytes = false,
+                                skipBytes = false
+                            )
+                        )
+                    }
                 }
             }
 
@@ -416,7 +430,7 @@ private fun String.escapeHtmlSpecialChars(): String =
 
 private fun String.escapeSpaces(): String =
     this.replace(" ", SPACE)
-        // .replace("-", "&#8209;")
+// .replace("-", "&#8209;")
 
 @Suppress("MagicNumber")
 private fun decodeBytesForHexView(bytes: List<Byte>): String =
