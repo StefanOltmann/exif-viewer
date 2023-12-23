@@ -85,7 +85,7 @@ class HtmlGeneratorTest {
 
         val imageBytes = Path("src/jvmTest/resources/photo_1.jpg").readBytes()
 
-        val actualHtml = imageBytes.toJpegHex()
+        val actualHtml = imageBytes.toHexHtml()
 
         val expectedHtml = Path("src/jvmTest/resources/photo_1_jpeg_hex.html")
             .readBytes()

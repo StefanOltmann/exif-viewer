@@ -50,7 +50,7 @@ fun processFile(uint8Array: Uint8Array) {
          */
         try {
 
-            updateHtml(hexElement, bytes.toJpegHex())
+            updateHtml(hexElement, bytes.toHexHtml())
 
         } catch (ex: Exception) {
 

@@ -1,6 +1,8 @@
 import com.ashampoo.kim.common.slice
+import com.ashampoo.kim.common.startsWith
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
+import com.ashampoo.kim.format.ImageFormatMagicNumbers
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
@@ -132,6 +134,15 @@ data class LabeledSlice(
     val emphasisOnFirstBytes: Boolean,
     val skipBytes: Boolean
 )
+
+fun ByteArray.toHexHtml(): String {
+
+    if (this.startsWith(ImageFormatMagicNumbers.jpeg)) {
+        return generateHtmlFromSlices(this, this.toJpegSlices())
+    }
+
+    return "At this time only supported for JPG."
+}
 
 fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
@@ -334,11 +345,10 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
     return slices
 }
 
-fun ByteArray.toJpegHex(): String {
-
-    val slices = this.toJpegSlices()
-
-    return buildString {
+private fun generateHtmlFromSlices(
+    bytes: ByteArray,
+    slices: List<LabeledSlice>
+): String = buildString {
 
         appendLine("<div style=\"font-family: monospace\">")
 
@@ -357,7 +367,7 @@ fun ByteArray.toJpegHex(): String {
                 else
                     skipToPosition = null
 
-                val byte = this@toJpegHex[position]
+                val byte = bytes[position]
 
                 if (bytesOfLine.isEmpty())
                     append(toPaddedPos(position) + SEPARATOR)
@@ -435,7 +445,6 @@ fun ByteArray.toJpegHex(): String {
 
         appendLine("</div>")
     }
-}
 
 private fun centerMessageInLine(message: String): String {
 
