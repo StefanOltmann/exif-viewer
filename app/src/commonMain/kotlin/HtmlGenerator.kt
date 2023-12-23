@@ -278,7 +278,8 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                     label = JpegConstants.markerDescription(segmentInfo.marker).escapeSpaces()
                         + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = true,
-                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER ||
+                        segmentInfo.marker == JpegConstants.JPEG_APP2_MARKER
                 )
             )
         }
@@ -379,8 +380,6 @@ fun ByteArray.toJpegHex(): String {
                         append("|")
                         append(SPACE.repeat(16 + 2))
                         append("|")
-                        append(SPACE)
-                        append("Image data")
 
                         appendLine("<br>")
                     }
