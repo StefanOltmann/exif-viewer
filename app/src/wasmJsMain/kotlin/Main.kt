@@ -44,7 +44,20 @@ fun processFile(uint8Array: Uint8Array) {
         updateHtml(iptcElement, metadata.toIptcHtmlString())
         updateHtml(xmpElement, metadata.toXmpHtmlString())
 
-        updateHtml(hexElement, bytes.toJpegHex())
+        /*
+         * The HEX view is an extra and may have its own problems.
+         * Don't fail everything if generating this view fails.
+         */
+        try {
+
+            updateHtml(hexElement, bytes.toJpegHex())
+
+        } catch (ex: Exception) {
+
+            ex.printStackTrace()
+
+            updateHtml(hexElement, "Failed to generate HEX view: ${ex.message}")
+        }
 
         val orientation: TiffOrientation = TiffOrientation.of(
             metadata.findShortValue(TiffTag.TIFF_TAG_ORIENTATION)?.toInt()
