@@ -207,7 +207,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
                 for (field in directory.entries) {
 
-                    val offset = field.offset.toInt() + 30
+                    val offset = field.offset + tiffHeaderStartPos
 
                     println(field.toString() + " = " + field.offset)
 
@@ -223,7 +223,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 }
             }
 
-            println(fieldSlices)
+
 
             slices.addAll(fieldSlices)
 
