@@ -247,6 +247,18 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                         )
                     }
                 }
+
+                val nextIdfOffset = directoryOffset + 2 +
+                    directory.entries.size * TiffConstants.TIFF_ENTRY_LENGTH
+
+                subSlices.add(
+                    LabeledSlice(
+                        range = nextIdfOffset until nextIdfOffset + 4,
+                        label = "Next IDF offset".escapeSpaces(),
+                        emphasisOnFirstBytes = false,
+                        skipBytes = false
+                    )
+                )
             }
 
             /* Sort in offset order. */
@@ -262,7 +274,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                     subSlices.add(
                         LabeledSlice(
                             range = lastSliceEnd + 1 until subSlice.range.first,
-                            label = "",
+                            label = "[padding]",
                             emphasisOnFirstBytes = false,
                             skipBytes = false
                         )
@@ -276,15 +288,13 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
             val trailingByteCount = endPosition - endOfLastSubSlice - 1
 
-            println("Trailing: $trailingByteCount")
-
             /* Add the final gap. */
             if (trailingByteCount > 0) {
 
                 subSlices.add(
                     LabeledSlice(
                         range = endOfLastSubSlice + 1 until endPosition,
-                        label = "",
+                        label = "[padding]",
                         emphasisOnFirstBytes = false,
                         skipBytes = false
                     )
