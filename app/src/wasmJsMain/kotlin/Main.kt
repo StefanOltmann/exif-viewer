@@ -10,6 +10,7 @@ import org.w3c.dom.url.URL
 private var exifElement: Element? = null
 private var iptcElement: Element? = null
 private var xmpElement: Element? = null
+private var hexElement: Element? = null
 
 private var htmlThumbnailImageElement: HTMLImageElement? = null
 
@@ -18,6 +19,7 @@ fun main() {
     exifElement = document.getElementById("exif")
     iptcElement = document.getElementById("iptc")
     xmpElement = document.getElementById("xmp")
+    hexElement = document.getElementById("hex")
 
     htmlThumbnailImageElement = document.getElementById("thumbnail") as? HTMLImageElement
 }
@@ -42,6 +44,21 @@ fun processFile(uint8Array: Uint8Array) {
         updateHtml(iptcElement, metadata.toIptcHtmlString())
         updateHtml(xmpElement, metadata.toXmpHtmlString())
 
+        /*
+         * The HEX view is an extra and may have its own problems.
+         * Don't fail everything if generating this view fails.
+         */
+        try {
+
+            updateHtml(hexElement, bytes.toHexHtml())
+
+        } catch (ex: Exception) {
+
+            ex.printStackTrace()
+
+            updateHtml(hexElement, "Failed to generate HEX view: ${ex.message}")
+        }
+
         val orientation: TiffOrientation = TiffOrientation.of(
             metadata.findShortValue(TiffTag.TIFF_TAG_ORIENTATION)?.toInt()
         ) ?: TiffOrientation.STANDARD
@@ -61,6 +78,7 @@ private fun updateAll(html: String) {
     updateHtml(exifElement, html)
     updateHtml(iptcElement, html)
     updateHtml(xmpElement, html)
+    updateHtml(hexElement, html)
 }
 
 private fun updateHtml(element: Element?, html: String) =

@@ -9,30 +9,32 @@
 
         .box {
             border: 2px solid #333333;
-            margin: 10px;
+            margin: .5em;
         }
 
         .box-title {
-            font-size: 18px;
+            font-size: 14pt;
             font-weight: bold;
             margin-bottom: 0;
             cursor: pointer; /* Add cursor pointer for better UX */
             background-color: #eeeeee; /* Header color */
             color: #333333; /* Text color */
-            padding: 8px;
+            padding: .5em;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .box-content {
-            display: block; /* Initially show the content */
-            padding: 10px;
+            font-size: 12pt;
+            display: block;
+            padding: .5em;
+            overflow: auto;
         }
 
         .expand-icon {
-            font-size: 18px;
-            margin-right: 5px;
+            font-size: 14pt;
+            margin-right: .5em;
             transition: transform 0.3s ease; /* Add smooth transition */
         }
 
@@ -43,12 +45,12 @@
         table {
             border-collapse: collapse;
             border: 1px solid #eeeeee;
-            padding: 10px;
+            padding: .5em;
         }
 
         th, td {
             border: 1px solid #eeeeee;
-            padding: 10px;
+            padding: .5em;
         }
 
         #dropbox {
@@ -57,8 +59,8 @@
             border: 0.25em dashed lightgray;
             text-align: center;
             font-size: large;
-            padding: 1em;
-            margin: 1em auto;
+            padding: .5em;
+            margin: .5em auto;
         }
 
         #dropbox.highlight {
@@ -82,7 +84,6 @@
         }
 
         #thumbnail {
-            max-width: 80%;
             margin: 0 auto;
         }
     </style>
@@ -95,7 +96,7 @@
 </div>
 
 <center>
-    <div id="warning">⚠️ Your browser does not support WebAssembly. ⚠️</div>
+    <div id="warning">⚠️ Your browser does not (fully) support WebAssembly. ⚠️</div>
 </center>
 
 <div id="dropbox">
@@ -142,6 +143,14 @@
     <div class="box-content" id="xmp"></div>
 </div>
 
+<div id="hex-box" class="box">
+    <div class="box-title" onclick="toggleBoxContent('hex-box')">
+        File structure (byte level HEX view)
+        <i class="fas fa-chevron-down expand-icon"></i>
+    </div>
+    <div class="box-content" id="hex"></div>
+</div>
+
 <div style="text-align: center; margin-top: 20px;">
     <p>
         <a href="https://github.com/StefanOltmann/exif-viewer"
@@ -170,13 +179,17 @@
     });
 
     function handleDragOver(event) {
+
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
+
         dropbox.classList.add('highlight');
     }
 
     function handleDragLeave(event) {
+
         event.preventDefault();
+
         dropbox.classList.remove('highlight');
     }
 
@@ -184,6 +197,7 @@
 
         event.preventDefault();
         dropbox.classList.remove('highlight');
+
         let items = event.dataTransfer.items;
 
         if (items.length === 0)
@@ -209,9 +223,13 @@
     }
 
     function toggleBoxContent(boxId) {
+
         const box = document.getElementById(boxId);
+
         if (box) {
+
             const content = box.querySelector('.box-content');
+
             if (content) {
                 content.style.display = content.style.display === 'none' ? 'block' : 'none';
                 box.classList.toggle('collapsed', content.style.display === 'none');
@@ -220,6 +238,7 @@
     }
 
     const unhandledError = (event, error) => {
+
         if (error instanceof WebAssembly.CompileError) {
 
             document.getElementById("warning").style.display = "initial";
@@ -231,8 +250,14 @@
                 webpackOverlay.style.display = "none";
         }
     }
+
     addEventListener("error", (event) => unhandledError(event, event.error));
     addEventListener("unhandledrejection", (event) => unhandledError(event, event.reason));
+
+    /* Initially collapsed */
+    toggleBoxContent('xmp-box')
+    toggleBoxContent('hex-box')
+
 </script>
 
 </body>
