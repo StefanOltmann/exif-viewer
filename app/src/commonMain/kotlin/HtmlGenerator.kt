@@ -304,13 +304,13 @@ private fun ByteArray.toTiffSlices(
             }
         }
 
-        val nextIdfOffset = directoryOffset + 2 +
+        val nextIfdOffset = directoryOffset + 2 +
             directory.entries.size * TiffConstants.TIFF_ENTRY_LENGTH
 
         slices.add(
             LabeledSlice(
-                range = nextIdfOffset until nextIdfOffset + 4,
-                label = "Next IDF offset".escapeSpaces(),
+                range = nextIfdOffset until nextIfdOffset + 4,
+                label = "Next IFD offset".escapeSpaces(),
                 emphasisOnFirstBytes = false,
                 skipBytes = false
             )
