@@ -207,6 +207,19 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
             for (directory in tiffContents.directories) {
 
+                val directoryOffset = directory.offset + tiffHeaderStartPos
+
+                subSlices.add(
+                    LabeledSlice(
+                        range = directoryOffset until directoryOffset + 2,
+                        label = ("${TiffDirectory.description(directory.type)} " +
+                            "[${directory.entries.size} entries]")
+                            .escapeSpaces(),
+                        emphasisOnFirstBytes = false,
+                        skipBytes = false
+                    )
+                )
+
                 for (field in directory.entries) {
 
                     val offset = field.offset + tiffHeaderStartPos
