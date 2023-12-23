@@ -1,0 +1,84 @@
+
+.box {
+    border: 2px solid #333333;
+    margin: .5em;
+}
+
+.box-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 0;
+    cursor: pointer; /* Add cursor pointer for better UX */
+    background-color: #eeeeee; /* Header color */
+    color: #333333; /* Text color */
+    padding: .5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.box-content {
+    display: block;
+    padding: .5em;
+    overflow: auto;
+}
+
+#hex {
+    font-family: monospace;
+    font-size: 1em;
+}
+
+.expand-icon {
+    font-size: 1.2em;
+    margin-right: .5em;
+    transition: transform 0.3s ease; /* Add smooth transition */
+}
+
+.box.collapsed .expand-icon {
+    transform: rotate(90deg); /* Rotate the icon when collapsed */
+}
+
+table {
+    border-collapse: collapse;
+    border: 1px solid #eeeeee;
+    padding: .5em;
+}
+
+th, td {
+    border: 1px solid #eeeeee;
+    padding: .5em;
+}
+
+#dropbox {
+    width: 12em;
+    height: 4em;
+    border: 0.25em dashed lightgray;
+    text-align: center;
+    font-size: large;
+    padding: .5em;
+    margin: .5em auto;
+}
+
+#dropbox.highlight {
+    border-color: #008000;
+}
+
+#fileInput {
+    display: none; /* hide file input field */
+}
+
+#warning {
+    background-color: yellow;
+    font-size: initial;
+    display: none;
+    padding: 1em;
+    margin: 1em;
+}
+
+#thumbnail-content {
+    text-align: center;
+}
+
+#thumbnail {
+    margin: 0 auto;
+}
