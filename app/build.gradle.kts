@@ -8,13 +8,19 @@ kotlin {
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
+
         moduleName = "app"
+
         browser {
             commonWebpackConfig {
                 outputFileName = "app.js"
             }
         }
+
         binaries.executable()
+
+        /* Use Binaryen optimization to make it smaller & faster */
+        applyBinaryen()
     }
 
     /* Only to execute tests. */
