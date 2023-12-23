@@ -18,7 +18,7 @@ private const val SEPARATOR: String = "$SPACE|$SPACE"
 private const val BYTES_PER_ROW: Int = 16
 private const val ROW_CHAR_LENGTH: Int = BYTES_PER_ROW * 3
 
-private const val SHOW_HTML_OFFSETS_AS_HEX: Boolean = true
+private const val SHOW_HTML_OFFSETS_AS_HEX: Boolean = false
 
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
@@ -224,10 +224,19 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
                     val offset = field.offset + tiffHeaderStartPos
 
+                    val adjustedValueOffset = field.valueOffset?.let {
+                        it + tiffHeaderStartPos
+                    }
+
+                    val label = if (adjustedValueOffset != null)
+                        "${field.tagFormatted}$SPACE${field.tagInfo.name}$SPACE(&rarr;$adjustedValueOffset)"
+                    else
+                        "${field.tagFormatted} ${field.tagInfo.name}".escapeSpaces()
+
                     subSlices.add(
                         LabeledSlice(
                             range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
-                            label = "${field.tagFormatted} ${field.tagInfo.name}".escapeSpaces(),
+                            label = label,
                             emphasisOnFirstBytes = false,
                             skipBytes = false
                         )
@@ -235,11 +244,11 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
                     field.valueOffset?.let { valueOffset ->
 
-                        val adjustedValueOffset = valueOffset + tiffHeaderStartPos
+                        val adjValueOffset = valueOffset + tiffHeaderStartPos
 
                         subSlices.add(
                             LabeledSlice(
-                                range = adjustedValueOffset until adjustedValueOffset + field.valueBytes.size,
+                                range = adjValueOffset until adjValueOffset + field.valueBytes.size,
                                 label = "${field.tagInfo.name} value".escapeSpaces(),
                                 emphasisOnFirstBytes = false,
                                 skipBytes = false
