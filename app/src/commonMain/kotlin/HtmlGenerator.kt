@@ -201,7 +201,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 )
             )
 
-            val fieldSlices = mutableListOf<LabeledSlice>()
+            val subSlices = mutableListOf<LabeledSlice>()
 
             for (directory in tiffContents.directories) {
 
@@ -211,11 +211,10 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
                     println(field.toString() + " = " + field.offset)
 
-                    fieldSlices.add(
+                    subSlices.add(
                         LabeledSlice(
                             range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
-                            label = "${field.tagFormatted} ${field.tagInfo.name} = ${field.valueDescription}"
-                                .escapeSpaces(),
+                            label = "${field.tagFormatted} ${field.tagInfo.name}".escapeSpaces(),
                             emphasisOnFirstBytes = false,
                             skipBytes = false
                         )
@@ -223,9 +222,36 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 }
             }
 
+            /* Sort in offset order. */
+            val sortedSubSlices = subSlices.sortedBy { it.range.first }
 
+            var lastSliceEnd = tiffHeaderEndPos
 
-            slices.addAll(fieldSlices)
+            /* Find gabs and add them. */
+            for (subSlice in sortedSubSlices) {
+
+                if (subSlice.range.first > lastSliceEnd + 1) {
+
+                    subSlices.add(
+                        LabeledSlice(
+                            range = lastSliceEnd until subSlice.range.first,
+                            label = "GAP $lastSliceEnd -> ${subSlice.range.first}",
+                            emphasisOnFirstBytes = false,
+                            skipBytes = false
+                        )
+                    )
+                }
+
+                lastSliceEnd = subSlice.range.last
+            }
+
+            /* Add the final gab. */
+
+            /* Sort in offset order. */
+            subSlices.sortBy { it.range.first }
+
+            /* Add all to the result. */
+            slices.addAll(subSlices)
 
 //            slices.add(
 //                LabeledSlice(
@@ -379,7 +405,7 @@ private fun String.escapeHtmlSpecialChars(): String =
 
 private fun String.escapeSpaces(): String =
     this.replace(" ", SPACE)
-        .replace("-", "&#8209;")
+        // .replace("-", "&#8209;")
 
 @Suppress("MagicNumber")
 private fun decodeBytesForHexView(bytes: List<Byte>): String =
