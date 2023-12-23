@@ -375,10 +375,10 @@ private fun toPaddedPos(pos: Int) =
     pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
 private fun String.escapeHtmlSpecialChars(): String =
-    this.escapeSpaces()
-        .replace("&", "&amp;")
+    this.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
+        .escapeSpaces()
 
 private fun String.escapeSpaces(): String =
     this.replace(" ", SPACE)
