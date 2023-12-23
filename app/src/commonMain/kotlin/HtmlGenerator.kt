@@ -201,43 +201,40 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 )
             )
 
-//            val fieldSlices = mutableListOf<LabeledSlice>()
-//
-//            for (directory in tiffContents.directories) {
-//
-//                for (field in directory.entries) {
-//
-//                    val offset = field.offset.toInt() + 40
-//
-//                    println(field.toString() + " = " + field.offset)
-//
-//                    fieldSlices.add(
-//                        LabeledSlice(
-//                            range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
-//                            label = field.tagInfo.toString() + SPACE + "=" + SPACE + field.valueDescription,
-//                            emphasisOnFirstBytes = false,
-//                            skipBytes = false
-//                        )
-//                    )
-//
-//                    break
-//                }
-//
-//                break
-//            }
-//
-//            println(fieldSlices)
-//
-//            slices.addAll(fieldSlices)
+            val fieldSlices = mutableListOf<LabeledSlice>()
 
-            slices.add(
-                LabeledSlice(
-                    range = tiffHeaderEndPos..endPosition,
-                    label = "rest",
-                    emphasisOnFirstBytes = false,
-                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
-                )
-            )
+            for (directory in tiffContents.directories) {
+
+                for (field in directory.entries) {
+
+                    val offset = field.offset.toInt() + 30
+
+                    println(field.toString() + " = " + field.offset)
+
+                    fieldSlices.add(
+                        LabeledSlice(
+                            range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
+                            label = "${field.tagFormatted} ${field.tagInfo.name} = ${field.valueDescription}"
+                                .escapeSpaces(),
+                            emphasisOnFirstBytes = false,
+                            skipBytes = false
+                        )
+                    )
+                }
+            }
+
+            println(fieldSlices)
+
+            slices.addAll(fieldSlices)
+
+//            slices.add(
+//                LabeledSlice(
+//                    range = tiffHeaderEndPos..endPosition,
+//                    label = "rest",
+//                    emphasisOnFirstBytes = false,
+//                    skipBytes = segmentInfo.marker == JpegConstants.SOS_MARKER
+//                )
+//            )
 
         } else {
 
@@ -382,6 +379,7 @@ private fun String.escapeHtmlSpecialChars(): String =
 
 private fun String.escapeSpaces(): String =
     this.replace(" ", SPACE)
+        .replace("-", "&#8209;")
 
 @Suppress("MagicNumber")
 private fun decodeBytesForHexView(bytes: List<Byte>): String =
