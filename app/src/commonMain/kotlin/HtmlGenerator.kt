@@ -143,7 +143,7 @@ fun ByteArray.toHexHtml(): String {
     return "At this time only supported for JPG."
 }
 
-fun ByteArray.toJpegSlices(): List<LabeledSlice> {
+private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
     val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
 
