@@ -239,7 +239,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
             /* Sort in offset order. */
             val sortedSubSlices = subSlices.sortedBy { it.range.first }
 
-            var lastSliceEnd = tiffHeaderEndPos
+            var lastSliceEnd = tiffHeaderEndPos - 1
 
             /* Find gabs and add them. */
             for (subSlice in sortedSubSlices) {
@@ -265,7 +265,7 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
             println("Trailing: $trailingByteCount")
 
-            /* Add the final gab. */
+            /* Add the final gap. */
             if (trailingByteCount > 0) {
 
                 subSlices.add(
