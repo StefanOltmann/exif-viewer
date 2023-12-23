@@ -137,9 +137,8 @@ data class LabeledSlice(
 
 fun ByteArray.toHexHtml(): String {
 
-    if (this.startsWith(ImageFormatMagicNumbers.jpeg)) {
+    if (this.startsWith(ImageFormatMagicNumbers.jpeg))
         return generateHtmlFromSlices(this, this.toJpegSlices())
-    }
 
     return "At this time only supported for JPG."
 }
@@ -173,16 +172,6 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 count = segmentInfo.length - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
             )
 
-            val tiffContents = TiffReader.read(ByteArrayByteReader(exifBytes))
-
-            val tiffHeader = tiffContents.header
-
-            val exifHeaderStartPos = startPosition + 4
-            val exifHeaderEndPos = exifHeaderStartPos + JpegConstants.EXIF_IDENTIFIER_CODE.size
-
-            val tiffHeaderStartPos = exifHeaderEndPos
-            val tiffHeaderEndPos = tiffHeaderStartPos + TiffConstants.TIFF_HEADER_SIZE
-
             /* APP1 Header */
             slices.add(
                 LabeledSlice(
@@ -194,6 +183,9 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 )
             )
 
+            val exifHeaderStartPos = startPosition + 4
+            val exifHeaderEndPos = exifHeaderStartPos + JpegConstants.EXIF_IDENTIFIER_CODE.size
+
             /* EXIF Identifier */
             slices.add(
                 LabeledSlice(
@@ -204,128 +196,12 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
                 )
             )
 
-            /* TIFF Header */
-            slices.add(
-                LabeledSlice(
-                    range = tiffHeaderStartPos until tiffHeaderEndPos,
-                    label = "TIFF Header v${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name}".escapeSpaces(),
-                    emphasisOnFirstBytes = false,
-                    skipBytes = false
+            slices.addAll(
+                exifBytes.toTiffSlices(
+                    startPosition = exifHeaderEndPos,
+                    endPosition = endPosition
                 )
             )
-
-            val subSlices = mutableListOf<LabeledSlice>()
-
-            for (directory in tiffContents.directories) {
-
-                val directoryOffset = directory.offset + tiffHeaderStartPos
-
-                subSlices.add(
-                    LabeledSlice(
-                        range = directoryOffset until directoryOffset + 2,
-                        label = ("${TiffDirectory.description(directory.type)} " +
-                            "[${directory.entries.size} entries]")
-                            .escapeSpaces(),
-                        emphasisOnFirstBytes = false,
-                        skipBytes = false
-                    )
-                )
-
-                for (field in directory.entries) {
-
-                    val offset = field.offset + tiffHeaderStartPos
-
-                    val adjustedValueOffset = field.valueOffset?.let {
-                        it + tiffHeaderStartPos
-                    }
-
-                    val label = if (adjustedValueOffset != null)
-                        "${field.tagFormatted}$SPACE${field.tagInfo.name}$SPACE(&rarr;$adjustedValueOffset)"
-                    else
-                        "${field.tagFormatted} ${field.tagInfo.name}".escapeSpaces()
-
-                    subSlices.add(
-                        LabeledSlice(
-                            range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
-                            label = label,
-                            emphasisOnFirstBytes = false,
-                            skipBytes = false
-                        )
-                    )
-
-                    field.valueOffset?.let { valueOffset ->
-
-                        val adjValueOffset = valueOffset + tiffHeaderStartPos
-
-                        subSlices.add(
-                            LabeledSlice(
-                                range = adjValueOffset until adjValueOffset + field.valueBytes.size,
-                                label = "${field.tagInfo.name} value".escapeSpaces(),
-                                emphasisOnFirstBytes = false,
-                                skipBytes = false
-                            )
-                        )
-                    }
-                }
-
-                val nextIdfOffset = directoryOffset + 2 +
-                    directory.entries.size * TiffConstants.TIFF_ENTRY_LENGTH
-
-                subSlices.add(
-                    LabeledSlice(
-                        range = nextIdfOffset until nextIdfOffset + 4,
-                        label = "Next IDF offset".escapeSpaces(),
-                        emphasisOnFirstBytes = false,
-                        skipBytes = false
-                    )
-                )
-            }
-
-            /* Sort in offset order. */
-            val sortedSubSlices = subSlices.sortedBy { it.range.first }
-
-            var lastSliceEnd = tiffHeaderEndPos - 1
-
-            /* Find gabs and add them. */
-            for (subSlice in sortedSubSlices) {
-
-                if (subSlice.range.first > lastSliceEnd + 1) {
-
-                    subSlices.add(
-                        LabeledSlice(
-                            range = lastSliceEnd + 1 until subSlice.range.first,
-                            label = "[padding]",
-                            emphasisOnFirstBytes = false,
-                            skipBytes = false
-                        )
-                    )
-                }
-
-                lastSliceEnd = subSlice.range.last
-            }
-
-            val endOfLastSubSlice = subSlices.maxOf { it.range.last }
-
-            val trailingByteCount = endPosition - endOfLastSubSlice - 1
-
-            /* Add the final gap. */
-            if (trailingByteCount > 0) {
-
-                subSlices.add(
-                    LabeledSlice(
-                        range = endOfLastSubSlice + 1 until endPosition,
-                        label = "[padding]",
-                        emphasisOnFirstBytes = false,
-                        skipBytes = false
-                    )
-                )
-            }
-
-            /* Sort in offset order. */
-            subSlices.sortBy { it.range.first }
-
-            /* Add all to the result. */
-            slices.addAll(subSlices)
 
         } else {
 
@@ -342,6 +218,144 @@ fun ByteArray.toJpegSlices(): List<LabeledSlice> {
         }
     }
 
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    return slices
+}
+
+private fun ByteArray.toTiffSlices(
+    startPosition: Int = 0,
+    endPosition: Int = this.size
+): List<LabeledSlice> {
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    val tiffContents = TiffReader.read(ByteArrayByteReader(this))
+
+    val tiffHeader = tiffContents.header
+
+    val tiffHeaderEndPos = startPosition + TiffConstants.TIFF_HEADER_SIZE
+
+    /* TIFF Header */
+    slices.add(
+        LabeledSlice(
+            range = startPosition until tiffHeaderEndPos,
+            label = "TIFF Header v${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name}".escapeSpaces(),
+            emphasisOnFirstBytes = false,
+            skipBytes = false
+        )
+    )
+
+    for (directory in tiffContents.directories) {
+
+        val directoryOffset = directory.offset + startPosition
+
+        slices.add(
+            LabeledSlice(
+                range = directoryOffset until directoryOffset + 2,
+                label = ("${TiffDirectory.description(directory.type)} " +
+                    "[${directory.entries.size} entries]")
+                    .escapeSpaces(),
+                emphasisOnFirstBytes = false,
+                skipBytes = false
+            )
+        )
+
+        for (field in directory.entries) {
+
+            val offset = field.offset + startPosition
+
+            val adjustedValueOffset = field.valueOffset?.let {
+                it + startPosition
+            }
+
+            val label = if (adjustedValueOffset != null)
+                "${field.tagFormatted}$SPACE${field.tagInfo.name}$SPACE(&rarr;$adjustedValueOffset)"
+            else
+                "${field.tagFormatted} ${field.tagInfo.name}".escapeSpaces()
+
+            slices.add(
+                LabeledSlice(
+                    range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
+                    label = label,
+                    emphasisOnFirstBytes = false,
+                    skipBytes = false
+                )
+            )
+
+            field.valueOffset?.let { valueOffset ->
+
+                val adjValueOffset = valueOffset + startPosition
+
+                slices.add(
+                    LabeledSlice(
+                        range = adjValueOffset until adjValueOffset + field.valueBytes.size,
+                        label = "${field.tagInfo.name} value".escapeSpaces(),
+                        emphasisOnFirstBytes = false,
+                        skipBytes = false
+                    )
+                )
+            }
+        }
+
+        val nextIdfOffset = directoryOffset + 2 +
+            directory.entries.size * TiffConstants.TIFF_ENTRY_LENGTH
+
+        slices.add(
+            LabeledSlice(
+                range = nextIdfOffset until nextIdfOffset + 4,
+                label = "Next IDF offset".escapeSpaces(),
+                emphasisOnFirstBytes = false,
+                skipBytes = false
+            )
+        )
+    }
+
+    /* Sort in offset order. */
+    val sortedSubSlices = slices.sortedBy { it.range.first }
+
+    var lastSliceEnd = tiffHeaderEndPos - 1
+
+    /* Find gabs and add them. */
+    for (subSlice in sortedSubSlices) {
+
+        if (subSlice.range.first > lastSliceEnd + 1) {
+
+            slices.add(
+                LabeledSlice(
+                    range = lastSliceEnd + 1 until subSlice.range.first,
+                    label = "[padding]",
+                    emphasisOnFirstBytes = false,
+                    skipBytes = false
+                )
+            )
+        }
+
+        lastSliceEnd = subSlice.range.last
+    }
+
+    val endOfLastSubSlice = slices.maxOf { it.range.last }
+
+    val trailingByteCount = endPosition - endOfLastSubSlice - 1
+
+    /* Add the final gap. */
+    if (trailingByteCount > 0) {
+
+        slices.add(
+            LabeledSlice(
+                range = endOfLastSubSlice + 1 until endPosition,
+                label = "[padding]",
+                emphasisOnFirstBytes = false,
+                skipBytes = false
+            )
+        )
+    }
+
+    /* Sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    /* Add all to the result. */
     return slices
 }
 
