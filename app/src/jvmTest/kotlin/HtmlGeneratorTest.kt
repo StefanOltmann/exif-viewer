@@ -99,11 +99,11 @@ class HtmlGeneratorTest {
     }
 
     @Test
-    fun testToHexHtmlJpeg() {
+    fun testGenerateHexHtmlJpeg() {
 
         val imageBytes = Path("src/jvmTest/resources/photo_1.jpg").readBytes()
 
-        val actualHtml = imageBytes.toHexHtml()
+        val actualHtml = generateHexHtml(imageBytes)
 
         val expectedHtml = Path("src/jvmTest/resources/photo_1_hex.html")
             .readBytes()
@@ -119,11 +119,11 @@ class HtmlGeneratorTest {
     }
 
     @Test
-    fun testToHexHtmlJpegWithThumbnail() {
+    fun testGenerateHexHtmlJpegWithThumbnail() {
 
         val imageBytes = Path("src/jvmTest/resources/photo_3.jpg").readBytes()
 
-        val actualHtml = imageBytes.toHexHtml()
+        val actualHtml = generateHexHtml(imageBytes)
 
         val expectedHtml = Path("src/jvmTest/resources/photo_3_hex.html")
             .readBytes()
@@ -139,11 +139,11 @@ class HtmlGeneratorTest {
     }
 
     @Test
-    fun testToHexHtmlTiff() {
+    fun testGenerateHexHtmlTiff() {
 
         val imageBytes = Path("src/jvmTest/resources/photo_2.tif").readBytes()
 
-        val actualHtml = imageBytes.toHexHtml()
+        val actualHtml = generateHexHtml(imageBytes)
 
         val expectedHtml = Path("src/jvmTest/resources/photo_2_hex.html")
             .readBytes()

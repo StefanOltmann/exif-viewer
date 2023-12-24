@@ -68,7 +68,7 @@ fun processFile(uint8Array: Uint8Array) {
          */
         try {
 
-            updateHtml(hexElement, bytes.toHexHtml())
+            updateHtml(hexElement, generateHexHtml(bytes))
 
         } catch (ex: Exception) {
 

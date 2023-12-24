@@ -145,29 +145,22 @@ fun ImageMetadata.toXmpHtmlString(): String =
         )
     }
 
-data class LabeledSlice(
-    val range: IntRange,
-    val label: String,
-    val emphasisOnFirstBytes: Boolean,
-    val snipBytes: Boolean
-)
+internal fun generateHexHtml(bytes: ByteArray): String {
 
-fun ByteArray.toHexHtml(): String {
-
-    val format = ImageFormat.detect(this) ?: return "Image format was not recognized."
+    val format = ImageFormat.detect(bytes) ?: return "Image format was not recognized."
 
     if (format == ImageFormat.JPEG)
-        return generateHtmlFromSlices(this, this.toJpegSlices())
+        return generateHtmlFromSlices(bytes, createJpegSlices(bytes))
 
     if (format == ImageFormat.TIFF)
-        return generateHtmlFromSlices(this, this.toTiffSlices())
+        return generateHtmlFromSlices(bytes, createTiffSlices(bytes))
 
     return "HEX view for $format is not (yet) supported."
 }
 
-private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
+private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
 
-    val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(this))
+    val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(bytes))
 
     val slices = mutableListOf<LabeledSlice>()
 
@@ -181,7 +174,7 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
          */
         val isExifSegment = segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
             JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(
-                this.slice(
+                bytes.slice(
                     startIndex = startPosition + 4,
                     count = JpegConstants.EXIF_IDENTIFIER_CODE.size
                 )
@@ -189,7 +182,7 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
 
         if (isExifSegment) {
 
-            val exifBytes = this.slice(
+            val exifBytes = bytes.slice(
                 startIndex = startPosition + 4 + JpegConstants.EXIF_IDENTIFIER_CODE.size,
                 count = segmentInfo.length - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
             )
@@ -219,7 +212,8 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
             )
 
             slices.addAll(
-                exifBytes.toTiffSlices(
+                createTiffSlices(
+                    bytes = exifBytes,
                     startPosition = exifHeaderEndPos,
                     endPosition = endPosition
                 )
@@ -246,14 +240,15 @@ private fun ByteArray.toJpegSlices(): List<LabeledSlice> {
     return slices
 }
 
-private fun ByteArray.toTiffSlices(
+private fun createTiffSlices(
+    bytes: ByteArray,
     startPosition: Int = 0,
-    endPosition: Int = this.size
+    endPosition: Int = bytes.size
 ): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
-    val tiffContents = TiffReader.read(ByteArrayByteReader(this))
+    val tiffContents = TiffReader.read(ByteArrayByteReader(bytes))
 
     val tiffHeader = tiffContents.header
 
