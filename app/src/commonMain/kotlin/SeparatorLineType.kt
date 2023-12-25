@@ -17,10 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-data class LabeledSlice(
-    val range: IntRange,
-    val label: String,
-    val emphasisOnFirstBytes: Int = 0,
-    val snipBytes: Boolean = false,
-    val separatorLineType: SeparatorLineType = SeparatorLineType.BOLD
-)
+enum class SeparatorLineType {
+    NONE,
+    THIN,
+    BOLD
+}

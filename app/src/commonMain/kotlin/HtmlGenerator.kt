@@ -45,6 +45,14 @@ private const val SHOW_HTML_OFFSETS_AS_HEX: Boolean = false
 
 private const val PNG_CRC_BYTES_LENGTH = 4
 
+private const val THIN_HR_HTML =
+    "<hr style=\"height:1px;margin:1px;padding:0;border-width:0;" +
+        "color:#eeeeee;background-color:#eeeeee\">"
+
+private const val BOLD_HR_HTML =
+    "<hr style=\"height:1px;margin:1px;padding:0;border-width:0;" +
+        "color:#bbbbbb;background-color:#bbbbbb\">"
+
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
 
@@ -157,7 +165,7 @@ fun generateHexHtml(bytes: ByteArray): String {
 
     return when (format) {
         ImageFormat.JPEG -> generateHtmlFromSlices(bytes, createJpegSlices(bytes))
-        ImageFormat.TIFF -> generateHtmlFromSlices(bytes, createTiffSlices(bytes))
+        ImageFormat.TIFF -> generateHtmlFromSlices(bytes, createTiffSlices(bytes, exifBytes = false))
         ImageFormat.PNG -> generateHtmlFromSlices(bytes, createPngSlices(bytes))
         else -> "HEX view for $format is not (yet) supported."
     }
@@ -171,7 +179,7 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
 
     for (segmentInfo in segmentInfos) {
 
-        val startPosition = segmentInfo.offset.toInt()
+        val startPosition = segmentInfo.offset
         val endPosition = startPosition + segmentInfo.length
 
         /*
@@ -198,8 +206,7 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
                     range = startPosition until startPosition + 4,
                     label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
                         "[${segmentInfo.length}" + SPACE + "bytes]",
-                    emphasisOnFirstBytes = 2,
-                    snipBytes = false
+                    emphasisOnFirstBytes = 2
                 )
             )
 
@@ -210,7 +217,8 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
             slices.add(
                 LabeledSlice(
                     range = exifHeaderStartPos until exifHeaderEndPos,
-                    label = "EXIF" + SPACE + "Identifier"
+                    label = "EXIF" + SPACE + "Identifier",
+                    separatorLineType = SeparatorLineType.THIN
                 )
             )
 
@@ -218,7 +226,8 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
                 createTiffSlices(
                     bytes = exifBytes,
                     startPosition = exifHeaderEndPos,
-                    endPosition = endPosition
+                    endPosition = endPosition,
+                    exifBytes = true
                 )
             )
 
@@ -230,6 +239,10 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
                     label = JpegConstants.markerDescription(segmentInfo.marker).escapeSpaces()
                         + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = 2,
+                    separatorLineType = if (segmentInfo.marker == JpegConstants.SOI_MARKER)
+                        SeparatorLineType.NONE
+                    else
+                        SeparatorLineType.BOLD,
                     /* Skip everything that is too long. */
                     snipBytes = segmentInfo.length > BYTES_PER_ROW * 2
                 )
@@ -255,7 +268,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
     slices.add(
         LabeledSlice(
             range = 0 until PngConstants.PNG_SIGNATURE.size,
-            label = "PNG${SPACE}signature"
+            label = "PNG${SPACE}signature",
+            separatorLineType = SeparatorLineType.NONE
         )
     )
 
@@ -267,7 +281,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
             LabeledSlice(
                 range = startPosition until startPosition + 8,
                 label = chunk.chunkType.name,
-                emphasisOnFirstBytes = 8
+                emphasisOnFirstBytes = 8,
+                separatorLineType = SeparatorLineType.BOLD
             )
         )
 
@@ -281,7 +296,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                 createTiffSlices(
                     bytes = chunk.bytes,
                     startPosition = dataOffset,
-                    endPosition = crcOffset
+                    endPosition = crcOffset,
+                    exifBytes = true
                 )
             )
 
@@ -293,7 +309,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                     label = chunk.chunkType.name + SPACE + "data" +
                         SPACE + "[${chunk.length}" + SPACE + "bytes]",
                     /* Skip everything that is too long. */
-                    snipBytes = chunk.length > BYTES_PER_ROW * 2
+                    snipBytes = chunk.length > BYTES_PER_ROW * 2,
+                    separatorLineType = SeparatorLineType.NONE
                 )
             )
         }
@@ -301,7 +318,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
         slices.add(
             LabeledSlice(
                 range = crcOffset until crcOffset + PNG_CRC_BYTES_LENGTH,
-                label = chunk.chunkType.name + SPACE + "CRC"
+                label = chunk.chunkType.name + SPACE + "CRC",
+                separatorLineType = SeparatorLineType.NONE
             )
         )
 
@@ -317,7 +335,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
 private fun createTiffSlices(
     bytes: ByteArray,
     startPosition: Int = 0,
-    endPosition: Int = bytes.size
+    endPosition: Int = bytes.size,
+    exifBytes: Boolean = true
 ): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
@@ -333,7 +352,8 @@ private fun createTiffSlices(
         LabeledSlice(
             range = startPosition until tiffHeaderEndPos,
             label = "TIFF Header v${tiffHeader.tiffVersion}, ${tiffHeader.byteOrder.name}"
-                .escapeSpaces()
+                .escapeSpaces(),
+            separatorLineType = if (exifBytes) SeparatorLineType.THIN else SeparatorLineType.NONE
         )
     )
 
@@ -363,7 +383,8 @@ private fun createTiffSlices(
             LabeledSlice(
                 range = directoryOffset until directoryOffset + 2,
                 label = ("$directoryDescription [${directory.entries.size} entries]")
-                    .escapeSpaces()
+                    .escapeSpaces(),
+                separatorLineType = if (exifBytes) SeparatorLineType.THIN else SeparatorLineType.BOLD
             )
         )
 
@@ -388,7 +409,8 @@ private fun createTiffSlices(
             slices.add(
                 LabeledSlice(
                     range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
-                    label = label
+                    label = label,
+                    separatorLineType = SeparatorLineType.NONE
                 )
             )
 
@@ -400,8 +422,9 @@ private fun createTiffSlices(
                     LabeledSlice(
                         range = adjValueOffset until adjValueOffset + field.valueBytes.size,
                         label = "${field.tagInfo.name} value".escapeSpaces(),
-                        /* Skip long value fields like Maker Note or XMP (in TIFF) */
-                        snipBytes = field.valueBytes.size > BYTES_PER_ROW * 3
+                        /* Skip very long value fields like Maker Note or XMP (in TIFF) */
+                        snipBytes = field.valueBytes.size > BYTES_PER_ROW * 5,
+                        separatorLineType = SeparatorLineType.NONE
                     )
                 )
             }
@@ -413,7 +436,8 @@ private fun createTiffSlices(
         slices.add(
             LabeledSlice(
                 range = nextIfdOffset until nextIfdOffset + 4,
-                label = "Next IFD offset".escapeSpaces()
+                label = "Next IFD offset".escapeSpaces(),
+                separatorLineType = SeparatorLineType.NONE
             )
         )
     }
@@ -437,7 +461,8 @@ private fun createTiffSlices(
                         "[pad${SPACE}byte]"
                     else
                         "[unknown$SPACE$byteCount${SPACE}bytes]",
-                    snipBytes = byteCount > BYTES_PER_ROW * 2
+                    snipBytes = byteCount > BYTES_PER_ROW * 2,
+                    separatorLineType = SeparatorLineType.NONE
                 )
             )
         }
@@ -459,7 +484,8 @@ private fun createTiffSlices(
                     "[pad${SPACE}byte]"
                 else
                     "[unknown$SPACE$trailingByteCount${SPACE}bytes]",
-                snipBytes = trailingByteCount > 2 * BYTES_PER_ROW
+                snipBytes = trailingByteCount > 2 * BYTES_PER_ROW,
+                separatorLineType = SeparatorLineType.NONE
             )
         )
     }
@@ -485,6 +511,12 @@ private fun generateHtmlFromSlices(
         var skipToPosition: Int? = null
 
         var firstLineOfSegment = true
+
+        if (slice.separatorLineType == SeparatorLineType.THIN)
+            appendLine(THIN_HR_HTML)
+
+        if (slice.separatorLineType == SeparatorLineType.BOLD)
+            appendLine(BOLD_HR_HTML)
 
         for (position in slice.range) {
 
@@ -558,12 +590,7 @@ private fun generateHtmlFromSlices(
 
                     append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
 
-                    append(SPACE)
-                    append("|")
-                    append(SPACE.repeat(16 + 2))
-                    append("|")
-
-                    appendLine("<br>")
+                    appendLine("$SPACE|${SPACE.repeat(18)}|<br>")
                 }
             }
         }
@@ -597,7 +624,6 @@ private fun String.escapeHtmlSpecialChars(): String =
 
 private fun String.escapeSpaces(): String =
     this.replace(" ", SPACE)
-// .replace("-", "&#8209;")
 
 @Suppress("MagicNumber")
 private fun decodeBytesForHexView(bytes: List<Byte>): String =
