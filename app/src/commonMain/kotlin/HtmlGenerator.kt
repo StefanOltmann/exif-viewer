@@ -598,11 +598,14 @@ private fun generateHtmlFromSlices(
 
                     val byteCountToSkip = skipToPosition - position - 1
 
-                    append(toPaddedPos(position) + SEPARATOR)
+                    if (byteCountToSkip > 0) {
 
-                    append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
+                        append(toPaddedPos(position) + SEPARATOR)
 
-                    appendLine("$SPACE|${SPACE.repeat(18)}|<br>")
+                        append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
+
+                        appendLine("$SPACE|${SPACE.repeat(18)}|<br>")
+                    }
                 }
             }
         }
