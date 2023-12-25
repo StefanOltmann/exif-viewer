@@ -521,7 +521,7 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-    appendLine("<div class=\"hex-container\">")
+    appendLine("<div class=\"hex-box\">")
 
     for (slice in slices) {
 
@@ -635,7 +635,7 @@ private fun generateHtmlFromSlices(
     appendLine(
         """
         <style>
-            .hex-container {
+            .hex-box {
                 font-family: monospace;
             }
 
@@ -653,7 +653,7 @@ private fun generateHtmlFromSlices(
         <script type="application/javascript">
             document.addEventListener('DOMContentLoaded', function () {
 
-                const spans = document.querySelectorAll('.hex-container span');
+                const spans = document.querySelectorAll('.hex-box span');
 
                 spans.forEach(span => {
 

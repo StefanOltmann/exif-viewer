@@ -1,4 +1,4 @@
-<div class="hex-container">
+<div class="hex-box">
 00000000&nbsp;|&nbsp;<b>FF</b>&nbsp;<b>D8</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;SOI&nbsp;(Start&nbsp;of&nbsp;Image)&nbsp;[2&nbsp;bytes]<br>
 <hr style="height:1px;margin:1px;padding:0;border-width:0;color:#bbbbbb;background-color:#bbbbbb">
 00000002&nbsp;|&nbsp;<b>FF</b>&nbsp;<b>E1</b>&nbsp;F3&nbsp;D6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;....&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;APP1&nbsp;[62424&nbsp;bytes]<br>
@@ -177,7 +177,7 @@
 </div>
 
 <style>
-    .hex-container {
+    .hex-box {
         font-family: monospace;
     }
 
@@ -189,7 +189,7 @@
 <script type="application/javascript">
     document.addEventListener('DOMContentLoaded', function () {
 
-        const spans = document.querySelectorAll('.hex-container span');
+        const spans = document.querySelectorAll('.hex-box span');
 
         spans.forEach(span => {
 
