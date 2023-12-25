@@ -23,6 +23,9 @@ import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
+import com.ashampoo.kim.format.png.ChunkType
+import com.ashampoo.kim.format.png.PngConstants
+import com.ashampoo.kim.format.png.PngImageParser
 import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.format.tiff.TiffReader
 import com.ashampoo.kim.format.tiff.constants.TiffConstants
@@ -146,17 +149,16 @@ fun ImageMetadata.toXmpHtmlString(): String =
         )
     }
 
-internal fun generateHexHtml(bytes: ByteArray): String {
+fun generateHexHtml(bytes: ByteArray): String {
 
     val format = ImageFormat.detect(bytes) ?: return "Image format was not recognized."
 
-    if (format == ImageFormat.JPEG)
-        return generateHtmlFromSlices(bytes, createJpegSlices(bytes))
-
-    if (format == ImageFormat.TIFF)
-        return generateHtmlFromSlices(bytes, createTiffSlices(bytes))
-
-    return "HEX view for $format is not (yet) supported."
+    return when (format) {
+        ImageFormat.JPEG -> generateHtmlFromSlices(bytes, createJpegSlices(bytes))
+        ImageFormat.TIFF -> generateHtmlFromSlices(bytes, createTiffSlices(bytes))
+        ImageFormat.PNG -> generateHtmlFromSlices(bytes, createPngSlices(bytes))
+        else -> "HEX view for $format is not (yet) supported."
+    }
 }
 
 private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
@@ -241,6 +243,50 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
     return slices
 }
 
+private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
+
+    val chunks = PngImageParser.readChunks(
+        byteReader = ByteArrayByteReader(bytes),
+        chunkTypeFilter = null
+    )
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    // TODO Add signature
+
+    var startPosition = PngConstants.PNG_SIGNATURE.size
+
+    for (chunk in chunks) {
+
+        val endPosition = startPosition + chunk.length
+
+        if (chunk.chunkType == ChunkType.EXIF) {
+
+            slices.addAll(createTiffSlices(chunk.bytes))
+
+        } else {
+
+            slices.add(
+                LabeledSlice(
+                    range = startPosition until endPosition,
+                    label = chunk.chunkType.toString().escapeSpaces()
+                        + SPACE + "[${chunk.length}" + SPACE + "bytes]",
+                    emphasisOnFirstBytes = true,
+                    /* Skip everything that is too long. */
+                    snipBytes = chunk.length > BYTES_PER_ROW * 2
+                )
+            )
+        }
+
+        startPosition += chunk.length + 1
+    }
+
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    return slices
+}
+
 private fun createTiffSlices(
     bytes: ByteArray,
     startPosition: Int = 0,
@@ -249,7 +295,7 @@ private fun createTiffSlices(
 
     val slices = mutableListOf<LabeledSlice>()
 
-    val tiffContents = TiffReader.read(ByteArrayByteReader(bytes))
+    val tiffContents = TiffReader.read(bytes)
 
     val tiffHeader = tiffContents.header
 
@@ -408,6 +454,8 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
+    appendLine("<div style=\"font-family: monospace;\">")
+
     for (slice in slices) {
 
         val bytesOfLine = mutableListOf<Byte>()
@@ -498,6 +546,8 @@ private fun generateHtmlFromSlices(
             }
         }
     }
+
+    appendLine("</div>")
 }
 
 private fun centerMessageInLine(message: String): String {
