@@ -650,7 +650,7 @@ private fun generateHtmlFromSlices(
 
     appendLine(
         """
-        <script>
+        <script type="application/javascript">
             document.addEventListener('DOMContentLoaded', function () {
 
                 const spans = document.querySelectorAll('.hex-container span');
