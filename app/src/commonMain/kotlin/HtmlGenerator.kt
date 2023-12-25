@@ -415,12 +415,14 @@ private fun createTiffSlices(
             else
                 labelBase.escapeSpaces()
 
+            val highlightId = "$directoryDescription-${field.sortHint}"
+
             slices.add(
                 LabeledSlice(
                     range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
                     label = label,
                     separatorLineType = SeparatorLineType.NONE,
-                    highlightId = field.tagFormatted
+                    highlightId = highlightId
                 )
             )
 
@@ -435,7 +437,7 @@ private fun createTiffSlices(
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
                         snipAfterLineCount = 8,
                         separatorLineType = SeparatorLineType.NONE,
-                        highlightId = field.tagFormatted
+                        highlightId = highlightId
                     )
                 )
             }
@@ -513,7 +515,7 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-    appendLine("<div class=\"hex-container\" style=\"font-family: monospace;\">")
+    appendLine("<div class=\"hex-container\">")
 
     for (slice in slices) {
 
@@ -617,6 +619,48 @@ private fun generateHtmlFromSlices(
     }
 
     appendLine("</div>")
+
+    appendLine()
+
+    appendLine(
+        """
+            <style>
+                .hex-container {
+                    font-family: monospace;
+                }
+
+                .highlight {
+                    background-color: yellow;
+                }
+            </style>
+        """
+    )
+
+    appendLine(
+        """
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+
+                const spans = document.querySelectorAll('.hex-container span');
+
+                spans.forEach(span => {
+
+                    span.addEventListener('mouseover', function () {
+                        const classes = Array.from(span.classList);
+                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+                        spansWithSameClass.forEach(s => s.classList.add('highlight'));
+                    });
+
+                    span.addEventListener('mouseout', function () {
+                        const classes = Array.from(span.classList);
+                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+                        spansWithSameClass.forEach(s => s.classList.remove('highlight'));
+                    });
+                });
+            });
+        </script>
+        """
+    )
 }
 
 private fun centerMessageInLine(message: String): String {
