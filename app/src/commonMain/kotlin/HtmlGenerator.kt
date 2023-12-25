@@ -255,7 +255,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
     slices.add(
         LabeledSlice(
             range = 0 until PngConstants.PNG_SIGNATURE.size,
-            label = "PNG signature"
+            label = "PNG${SPACE}signature"
         )
     )
 
