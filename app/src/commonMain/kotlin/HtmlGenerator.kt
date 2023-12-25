@@ -433,7 +433,10 @@ private fun createTiffSlices(
             slices.add(
                 LabeledSlice(
                     range = lastSliceEnd + 1 until subSlice.range.first,
-                    label = if (byteCount == 1) "[pad byte]" else "[unknown $byteCount bytes]",
+                    label = if (byteCount == 1)
+                        "[pad${SPACE}byte]"
+                    else
+                        "[unknown$SPACE$byteCount${SPACE}bytes]",
                     snipBytes = byteCount > BYTES_PER_ROW * 2
                 )
             )
@@ -452,7 +455,10 @@ private fun createTiffSlices(
         slices.add(
             LabeledSlice(
                 range = endOfLastSubSlice + 1 until endPosition,
-                label = if (trailingByteCount == 1) "[pad byte]" else "[unknown $trailingByteCount bytes]",
+                label = if (trailingByteCount == 1)
+                    "[pad${SPACE}byte]"
+                else
+                    "[unknown$SPACE$trailingByteCount${SPACE}bytes]",
                 snipBytes = trailingByteCount > 2 * BYTES_PER_ROW
             )
         )
