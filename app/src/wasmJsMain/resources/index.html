@@ -117,6 +117,10 @@
             text-align: center;
             font-size: small;
         }
+
+        .highlight {
+            background-color: yellow;
+        }
     </style>
 </head>
 
@@ -289,6 +293,24 @@
     toggleBoxContent('xmp-box')
     toggleBoxContent('hex-box')
 
+    // /* Highlighting (experimental) */
+    //
+    // const spans = document.querySelectorAll('.hex-box span');
+    //
+    // spans.forEach(span => {
+    //
+    //     span.addEventListener('mouseover', function () {
+    //         const classes = Array.from(span.classList);
+    //         const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+    //         spansWithSameClass.forEach(s => s.classList.add('highlight'));
+    //     });
+    //
+    //     span.addEventListener('mouseout', function () {
+    //         const classes = Array.from(span.classList);
+    //         const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+    //         spansWithSameClass.forEach(s => s.classList.remove('highlight'));
+    //     });
+    // });
 </script>
 
 </body>

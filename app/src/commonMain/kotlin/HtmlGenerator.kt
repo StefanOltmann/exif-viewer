@@ -415,11 +415,19 @@ private fun createTiffSlices(
             else
                 labelBase.escapeSpaces()
 
+            /* Only highlight overflow values. */
+            val highlightId = if (field.valueOffset != null)
+                "$directoryDescription-${field.sortHint}"
+            else
+                null
+
             slices.add(
                 LabeledSlice(
                     range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
                     label = label,
-                    separatorLineType = SeparatorLineType.NONE
+                    separatorLineType = SeparatorLineType.NONE,
+                    highlightId = highlightId,
+                    highlightLabel = true
                 )
             )
 
@@ -433,7 +441,9 @@ private fun createTiffSlices(
                         label = "${field.tagInfo.name} value".escapeSpaces(),
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
                         snipAfterLineCount = 8,
-                        separatorLineType = SeparatorLineType.NONE
+                        separatorLineType = SeparatorLineType.NONE,
+                        highlightId = highlightId,
+                        highlightLabel = false
                     )
                 )
             }
@@ -511,7 +521,7 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-    appendLine("<div style=\"font-family: monospace;\">")
+    appendLine("<div class=\"hex-box\">")
 
     for (slice in slices) {
 
@@ -543,7 +553,7 @@ private fun generateHtmlFromSlices(
 
             /* Emphasis on the marker bytes. */
             if (firstLineOfSegment && bytesOfLine.size <= slice.emphasisOnFirstBytes)
-                append("<b>" + byte.toHex().uppercase() + "</b>" + SPACE)
+                append("<b>" + byte.toHex().uppercase() + "</b>$SPACE")
             else
                 append(byte.toHex().uppercase() + SPACE)
 
@@ -565,7 +575,13 @@ private fun generateHtmlFromSlices(
 
                 append("|$SPACE")
 
-                append(decodeBytesForHexView(bytesOfLine))
+                if (slice.highlightId != null && !slice.highlightLabel)
+                    append(
+                        "<span class=\"${slice.highlightId}\">" +
+                            decodeBytesForHexView(bytesOfLine) + "</span>"
+                    )
+                else
+                    append(decodeBytesForHexView(bytesOfLine))
 
                 if (remainingByteCount > 0)
                     append(SPACE.repeat(remainingByteCount))
@@ -575,7 +591,10 @@ private fun generateHtmlFromSlices(
                 /* Write segment marker info on the line where it started. */
                 if (firstLineOfSegment) {
 
-                    append(slice.label)
+                    if (slice.highlightId != null && slice.highlightLabel)
+                        append("<span class=\"${slice.highlightId}\">" + slice.label + "</span>")
+                    else
+                        append(slice.label)
 
                     firstLineOfSegment = false
                 }
@@ -612,6 +631,50 @@ private fun generateHtmlFromSlices(
     }
 
     appendLine("</div>")
+
+    appendLine()
+
+    appendLine(
+        """
+        <style>
+            .hex-box {
+                font-family: monospace;
+            }
+
+            .highlight {
+                background-color: yellow;
+            }
+        </style>
+        """.trimIndent()
+    )
+
+    appendLine()
+
+    appendLine(
+        """
+        <script type="application/javascript">
+            document.addEventListener('DOMContentLoaded', function () {
+
+                const spans = document.querySelectorAll('.hex-box span');
+
+                spans.forEach(span => {
+
+                    span.addEventListener('mouseover', function () {
+                        const classes = Array.from(span.classList);
+                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+                        spansWithSameClass.forEach(s => s.classList.add('highlight'));
+                    });
+
+                    span.addEventListener('mouseout', function () {
+                        const classes = Array.from(span.classList);
+                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+                        spansWithSameClass.forEach(s => s.classList.remove('highlight'));
+                    });
+                });
+            });
+        </script>
+        """.trimIndent()
+    )
 }
 
 private fun centerMessageInLine(message: String): String {
