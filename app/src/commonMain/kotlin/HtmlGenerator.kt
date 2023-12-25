@@ -43,6 +43,8 @@ private const val ROW_CHAR_LENGTH: Int = BYTES_PER_ROW * 3
 
 private const val SHOW_HTML_OFFSETS_AS_HEX: Boolean = false
 
+private const val PNG_CRC_BYTES_LENGTH = 4
+
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
 
@@ -255,7 +257,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
     slices.add(
         LabeledSlice(
             range = 0 until PngConstants.PNG_SIGNATURE.size,
-            label = "PNG Signature",
+            label = "PNG signature",
             emphasisOnFirstBytes = false,
             snipBytes = false
         )
@@ -288,7 +290,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                 )
             )
 
-        } else {
+        } else if (chunk.length > 0) {
 
             slices.add(
                 LabeledSlice(
@@ -304,14 +306,14 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
 
         slices.add(
             LabeledSlice(
-                range = crcOffset until crcOffset + 4,
+                range = crcOffset until crcOffset + PNG_CRC_BYTES_LENGTH,
                 label = chunk.chunkType.name + SPACE + "CRC",
                 emphasisOnFirstBytes = false,
                 snipBytes = false
             )
         )
 
-        startPosition = crcOffset + 4
+        startPosition = crcOffset + PNG_CRC_BYTES_LENGTH
     }
 
     /* For safety sort in offset order. */
