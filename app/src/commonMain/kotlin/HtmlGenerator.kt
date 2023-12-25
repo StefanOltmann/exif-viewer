@@ -415,14 +415,19 @@ private fun createTiffSlices(
             else
                 labelBase.escapeSpaces()
 
-            val highlightId = "$directoryDescription-${field.sortHint}"
+            /* Only highlight overflow values. */
+            val highlightId = if (field.valueOffset != null)
+                "$directoryDescription-${field.sortHint}"
+            else
+                null
 
             slices.add(
                 LabeledSlice(
                     range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
                     label = label,
                     separatorLineType = SeparatorLineType.NONE,
-                    highlightId = highlightId
+                    highlightId = highlightId,
+                    highlightLabel = true
                 )
             )
 
@@ -437,7 +442,8 @@ private fun createTiffSlices(
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
                         snipAfterLineCount = 8,
                         separatorLineType = SeparatorLineType.NONE,
-                        highlightId = highlightId
+                        highlightId = highlightId,
+                        highlightLabel = false
                     )
                 )
             }
@@ -569,7 +575,11 @@ private fun generateHtmlFromSlices(
 
                 append("|$SPACE")
 
-                append(decodeBytesForHexView(bytesOfLine))
+                if (slice.highlightId != null && !slice.highlightLabel)
+                    append("<span class=\"${slice.highlightId}\">" +
+                        decodeBytesForHexView(bytesOfLine) + "</span>")
+                else
+                    append(decodeBytesForHexView(bytesOfLine))
 
                 if (remainingByteCount > 0)
                     append(SPACE.repeat(remainingByteCount))
@@ -579,7 +589,7 @@ private fun generateHtmlFromSlices(
                 /* Write segment marker info on the line where it started. */
                 if (firstLineOfSegment) {
 
-                    if (slice.highlightId != null)
+                    if (slice.highlightId != null && slice.highlightLabel)
                         append("<span class=\"${slice.highlightId}\">" + slice.label + "</span>")
                     else
                         append(slice.label)
