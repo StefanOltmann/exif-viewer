@@ -244,7 +244,16 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
                     else
                         SeparatorLineType.BOLD,
                     /* Skip everything that is too long. */
-                    snipBytes = segmentInfo.length > BYTES_PER_ROW * 2
+                    snipAfterLineCount = when (segmentInfo.marker) {
+                        /* Try to show much of a comment. */
+                        JpegConstants.COM_MARKER_1, JpegConstants.COM_MARKER_2 -> 10
+                        /* Display more of IPTC if it's not too long. */
+                        JpegConstants.JPEG_APP13_MARKER -> 10 // 12 lines in total
+                        /* Show the beginning of XMP */
+                        JpegConstants.JPEG_APP1_MARKER -> 6 // 8 lines in total
+                        /* Shorten everything else (like SOS) */
+                        else -> 1
+                    }
                 )
             )
         }
@@ -309,7 +318,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                     label = chunk.chunkType.name + SPACE + "data" +
                         SPACE + "[${chunk.length}" + SPACE + "bytes]",
                     /* Skip everything that is too long. */
-                    snipBytes = chunk.length > BYTES_PER_ROW * 2,
+                    snipAfterLineCount = 1,
                     separatorLineType = SeparatorLineType.NONE
                 )
             )
@@ -374,7 +383,7 @@ private fun createTiffSlices(
                 LabeledSlice(
                     range = offset until offset + it.length,
                     label = "[$directoryDescription thumbnail: ${it.length} bytes]".escapeSpaces(),
-                    snipBytes = it.length > BYTES_PER_ROW * 2
+                    snipAfterLineCount = 1
                 )
             )
         }
@@ -423,7 +432,7 @@ private fun createTiffSlices(
                         range = adjValueOffset until adjValueOffset + field.valueBytes.size,
                         label = "${field.tagInfo.name} value".escapeSpaces(),
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
-                        snipBytes = field.valueBytes.size > BYTES_PER_ROW * 5,
+                        snipAfterLineCount = 8,
                         separatorLineType = SeparatorLineType.NONE
                     )
                 )
@@ -461,7 +470,7 @@ private fun createTiffSlices(
                         "[pad${SPACE}byte]"
                     else
                         "[unknown$SPACE$byteCount${SPACE}bytes]",
-                    snipBytes = byteCount > BYTES_PER_ROW * 2,
+                    snipAfterLineCount = 3,
                     separatorLineType = SeparatorLineType.NONE
                 )
             )
@@ -484,7 +493,7 @@ private fun createTiffSlices(
                     "[pad${SPACE}byte]"
                 else
                     "[unknown$SPACE$trailingByteCount${SPACE}bytes]",
-                snipBytes = trailingByteCount > 2 * BYTES_PER_ROW,
+                snipAfterLineCount = 2,
                 separatorLineType = SeparatorLineType.NONE
             )
         )
@@ -575,11 +584,14 @@ private fun generateHtmlFromSlices(
 
                 bytesOfLine.clear()
 
+                val printedBytesCount = position - slice.range.first + 1
+                val maxBytesToPrint = slice.snipAfterLineCount * BYTES_PER_ROW
+
                 /*
                  * Start of Scan contains image data and is very long. We want to skip
                  * all these data which are not useful for a metadata hex dump.
                  */
-                if (slice.snipBytes && position != slice.range.last) {
+                if (printedBytesCount >= maxBytesToPrint && position != slice.range.last) {
 
                     /* Skip to the end of the segment in the next iteration. */
                     skipToPosition = slice.range.last - BYTES_PER_ROW + 1
