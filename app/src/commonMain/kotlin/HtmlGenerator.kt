@@ -252,33 +252,66 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
-    // TODO Add signature
+    slices.add(
+        LabeledSlice(
+            range = 0 until PngConstants.PNG_SIGNATURE.size,
+            label = "PNG Signature",
+            emphasisOnFirstBytes = false,
+            snipBytes = false
+        )
+    )
 
     var startPosition = PngConstants.PNG_SIGNATURE.size
 
     for (chunk in chunks) {
 
-        val endPosition = startPosition + chunk.length
+        slices.add(
+            LabeledSlice(
+                range = startPosition until startPosition + 8,
+                label = chunk.chunkType.name,
+                emphasisOnFirstBytes = false,
+                snipBytes = false
+            )
+        )
+
+        val dataOffset = startPosition + 8
+
+        val crcOffset = dataOffset + chunk.length
 
         if (chunk.chunkType == ChunkType.EXIF) {
 
-            slices.addAll(createTiffSlices(chunk.bytes))
+            slices.addAll(
+                createTiffSlices(
+                    bytes = chunk.bytes,
+                    startPosition = dataOffset,
+                    endPosition = crcOffset
+                )
+            )
 
         } else {
 
             slices.add(
                 LabeledSlice(
-                    range = startPosition until endPosition,
-                    label = chunk.chunkType.toString().escapeSpaces()
-                        + SPACE + "[${chunk.length}" + SPACE + "bytes]",
-                    emphasisOnFirstBytes = true,
+                    range = dataOffset until crcOffset,
+                    label = chunk.chunkType.name + SPACE + "data" +
+                        SPACE + "[${chunk.length}" + SPACE + "bytes]",
+                    emphasisOnFirstBytes = false,
                     /* Skip everything that is too long. */
                     snipBytes = chunk.length > BYTES_PER_ROW * 2
                 )
             )
         }
 
-        startPosition += chunk.length + 1
+        slices.add(
+            LabeledSlice(
+                range = crcOffset until crcOffset + 4,
+                label = chunk.chunkType.name + SPACE + "CRC",
+                emphasisOnFirstBytes = false,
+                snipBytes = false
+            )
+        )
+
+        startPosition = crcOffset + 4
     }
 
     /* For safety sort in offset order. */
