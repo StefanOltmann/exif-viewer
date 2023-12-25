@@ -576,8 +576,10 @@ private fun generateHtmlFromSlices(
                 append("|$SPACE")
 
                 if (slice.highlightId != null && !slice.highlightLabel)
-                    append("<span class=\"${slice.highlightId}\">" +
-                        decodeBytesForHexView(bytesOfLine) + "</span>")
+                    append(
+                        "<span class=\"${slice.highlightId}\">" +
+                            decodeBytesForHexView(bytesOfLine) + "</span>"
+                    )
                 else
                     append(decodeBytesForHexView(bytesOfLine))
 
