@@ -555,37 +555,34 @@
 01228383&nbsp;|&nbsp;AE&nbsp;42&nbsp;60&nbsp;82&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;.B`.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;IEND&nbsp;CRC<br>
 </div>
 
+<style>
+    .hex-container {
+        font-family: monospace;
+    }
 
-            <style>
-                .hex-container {
-                    font-family: monospace;
-                }
+    .highlight {
+        background-color: yellow;
+    }
+</style>
 
-                .highlight {
-                    background-color: yellow;
-                }
-            </style>
-        
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
+        const spans = document.querySelectorAll('.hex-container span');
 
-                const spans = document.querySelectorAll('.hex-container span');
+        spans.forEach(span => {
 
-                spans.forEach(span => {
-
-                    span.addEventListener('mouseover', function () {
-                        const classes = Array.from(span.classList);
-                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
-                        spansWithSameClass.forEach(s => s.classList.add('highlight'));
-                    });
-
-                    span.addEventListener('mouseout', function () {
-                        const classes = Array.from(span.classList);
-                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
-                        spansWithSameClass.forEach(s => s.classList.remove('highlight'));
-                    });
-                });
+            span.addEventListener('mouseover', function () {
+                const classes = Array.from(span.classList);
+                const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+                spansWithSameClass.forEach(s => s.classList.add('highlight'));
             });
-        </script>
-        
+
+            span.addEventListener('mouseout', function () {
+                const classes = Array.from(span.classList);
+                const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
+                spansWithSameClass.forEach(s => s.classList.remove('highlight'));
+            });
+        });
+    });
+</script>

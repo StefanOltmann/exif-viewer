@@ -624,17 +624,19 @@ private fun generateHtmlFromSlices(
 
     appendLine(
         """
-            <style>
-                .hex-container {
-                    font-family: monospace;
-                }
+        <style>
+            .hex-container {
+                font-family: monospace;
+            }
 
-                .highlight {
-                    background-color: yellow;
-                }
-            </style>
-        """
+            .highlight {
+                background-color: yellow;
+            }
+        </style>
+        """.trimIndent()
     )
+
+    appendLine()
 
     appendLine(
         """
@@ -659,7 +661,7 @@ private fun generateHtmlFromSlices(
                 });
             });
         </script>
-        """
+        """.trimIndent()
     )
 }
 
