@@ -20,6 +20,6 @@
 data class LabeledSlice(
     val range: IntRange,
     val label: String,
-    val emphasisOnFirstBytes: Boolean,
-    val snipBytes: Boolean
+    val emphasisOnFirstBytes: Int = 0,
+    val snipBytes: Boolean = false
 )
