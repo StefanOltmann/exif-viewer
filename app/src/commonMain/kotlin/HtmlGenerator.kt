@@ -419,7 +419,8 @@ private fun createTiffSlices(
                 LabeledSlice(
                     range = offset until offset + TiffConstants.TIFF_ENTRY_LENGTH,
                     label = label,
-                    separatorLineType = SeparatorLineType.NONE
+                    separatorLineType = SeparatorLineType.NONE,
+                    highlightId = field.tagFormatted
                 )
             )
 
@@ -433,7 +434,8 @@ private fun createTiffSlices(
                         label = "${field.tagInfo.name} value".escapeSpaces(),
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
                         snipAfterLineCount = 8,
-                        separatorLineType = SeparatorLineType.NONE
+                        separatorLineType = SeparatorLineType.NONE,
+                        highlightId = field.tagFormatted
                     )
                 )
             }
@@ -511,7 +513,7 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-    appendLine("<div style=\"font-family: monospace;\">")
+    appendLine("<div class=\"hex-container\" style=\"font-family: monospace;\">")
 
     for (slice in slices) {
 
@@ -543,7 +545,7 @@ private fun generateHtmlFromSlices(
 
             /* Emphasis on the marker bytes. */
             if (firstLineOfSegment && bytesOfLine.size <= slice.emphasisOnFirstBytes)
-                append("<b>" + byte.toHex().uppercase() + "</b>" + SPACE)
+                append("<b>" + byte.toHex().uppercase() + "</b>$SPACE")
             else
                 append(byte.toHex().uppercase() + SPACE)
 
@@ -575,7 +577,10 @@ private fun generateHtmlFromSlices(
                 /* Write segment marker info on the line where it started. */
                 if (firstLineOfSegment) {
 
-                    append(slice.label)
+                    if (slice.highlightId != null)
+                        append("<span class=\"${slice.highlightId}\">" + slice.label + "</span>")
+                    else
+                        append(slice.label)
 
                     firstLineOfSegment = false
                 }
