@@ -21,12 +21,13 @@ import com.ashampoo.kim.Kim
 import com.ashampoo.kim.format.tiff.constants.TiffTag
 import com.ashampoo.kim.model.TiffOrientation
 import kotlinx.browser.document
+import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Uint8Array
-import org.w3c.dom.Element
-import org.w3c.dom.HTMLImageElement
-import org.w3c.dom.HTMLSpanElement
-import org.w3c.dom.get
+import org.w3c.dom.*
 import org.w3c.dom.url.URL
+import org.w3c.files.File
+import org.w3c.files.FileReader
+import org.w3c.files.get
 
 private var exifElement: Element? = null
 private var iptcElement: Element? = null
@@ -43,11 +44,89 @@ fun main() {
     hexElement = document.getElementById("hex")
 
     htmlThumbnailImageElement = document.getElementById("thumbnail") as? HTMLImageElement
+
+    registerFileInputEvents()
 }
 
-@OptIn(ExperimentalJsExport::class)
-@JsExport
-fun processFile(uint8Array: Uint8Array) {
+private fun registerFileInputEvents() {
+
+    val dropbox = document.getElementById("dropbox")
+    val fileInput = document.getElementById("fileInput") as? HTMLElement
+
+    dropbox?.addEventListener("dragover") { event ->
+
+        event as DragEvent
+
+        event.preventDefault()
+        event.dataTransfer?.dropEffect = "copy"
+        dropbox.classList.add("highlight")
+    }
+
+    dropbox?.addEventListener("dragleave") { event ->
+
+        event as DragEvent
+
+        event.preventDefault()
+        dropbox.classList.remove("highlight")
+    }
+
+    dropbox?.addEventListener("drop") { event ->
+
+        event as DragEvent
+
+        event.preventDefault();
+        dropbox.classList.remove("highlight");
+
+        val items = event.dataTransfer?.items;
+
+        if (items == null || items.length == 0)
+            return@addEventListener
+
+        handleFile(items[0]!!.getAsFile()!!)
+    }
+
+    dropbox?.addEventListener("click") { _ ->
+        fileInput?.click()
+    }
+
+    fileInput?.addEventListener("change") { event ->
+
+        val target = event.target as? HTMLInputElement ?: return@addEventListener
+
+        val files = target.files
+
+        if (files == null || files.length == 0)
+            return@addEventListener
+
+        handleFile(files[0]!!)
+    }
+}
+
+private fun handleFile(file: File) {
+
+    val fileReader = FileReader()
+
+    fileReader.onload = { event ->
+
+        val target = event.target as? FileReader
+
+        if (target != null) {
+
+            val arrayBuffer = target.result as? ArrayBuffer
+
+            if (arrayBuffer != null) {
+
+                val uInt8Bytes = Uint8Array(arrayBuffer)
+
+                processFile(uInt8Bytes)
+            }
+        }
+    }
+
+    fileReader.readAsArrayBuffer(file)
+}
+
+private fun processFile(uint8Array: Uint8Array) {
 
     val bytes = uint8Array.toByteArray()
 

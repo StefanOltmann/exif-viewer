@@ -197,66 +197,6 @@
 
 <script type="application/javascript">
 
-    const dropbox = document.getElementById('dropbox');
-    const fileInput = document.getElementById('fileInput');
-
-    dropbox.addEventListener('dragover', handleDragOver);
-    dropbox.addEventListener('dragleave', handleDragLeave);
-    dropbox.addEventListener('drop', handleDrop);
-    dropbox.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', event => {
-
-        if (event.target.files.length === 0)
-            return;
-
-        handleFile(event.target.files[0]);
-    });
-
-    function handleDragOver(event) {
-
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
-
-        dropbox.classList.add('highlight');
-    }
-
-    function handleDragLeave(event) {
-
-        event.preventDefault();
-
-        dropbox.classList.remove('highlight');
-    }
-
-    function handleDrop(event) {
-
-        event.preventDefault();
-        dropbox.classList.remove('highlight');
-
-        let items = event.dataTransfer.items;
-
-        if (items.length === 0)
-            return;
-
-        handleFile(items[0].getAsFile());
-    }
-
-    function handleFile(file) {
-
-        let fileReader = new FileReader()
-
-        fileReader.onload = function (event) {
-
-            let uInt8Bytes = new Uint8Array(event.target.result);
-
-            app.then(exports => {
-                exports.default.processFile(uInt8Bytes);
-            });
-        };
-
-        fileReader.readAsArrayBuffer(file);
-    }
-
     function toggleBoxContent(boxId) {
 
         const box = document.getElementById(boxId);
