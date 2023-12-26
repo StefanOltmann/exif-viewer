@@ -24,6 +24,8 @@ import kotlinx.browser.document
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLImageElement
+import org.w3c.dom.HTMLSpanElement
+import org.w3c.dom.get
 import org.w3c.dom.url.URL
 
 private var exifElement: Element? = null
@@ -71,6 +73,12 @@ fun processFile(uint8Array: Uint8Array) {
 
             updateHtml(hexElement, generateHexHtml(bytes))
 
+            /*
+             * The event listeners for the spans should be added after setting them
+             * as innerHTML, as they become part of the DOM at that point.
+             */
+            addHoverListenersToSpans()
+
         } catch (ex: Exception) {
 
             ex.printStackTrace()
@@ -90,6 +98,47 @@ fun processFile(uint8Array: Uint8Array) {
 
         updateAll("Parsing error: ${ex.message}")
         updateThumbnail(null, TiffOrientation.STANDARD)
+    }
+}
+
+/**
+ * Adds mouseover listeners to the spans in the HEX view HTML.
+ */
+private fun addHoverListenersToSpans() {
+
+    val spans = document.querySelectorAll(".hex-box span")
+
+    for (i in 0..spans.length) {
+
+        val span: HTMLSpanElement = spans[i] as? HTMLSpanElement ?: continue
+
+        span.addEventListener("mouseover") {
+
+            val cssClass = span.classList[0] ?: return@addEventListener
+
+            val spansWithSameClass = document.querySelectorAll(".$cssClass")
+
+            for (j in 0..spansWithSameClass.length) {
+
+                val sameClassSpan = spansWithSameClass[j] as? HTMLSpanElement ?: continue
+
+                sameClassSpan.classList.add("marked")
+            }
+        }
+
+        span.addEventListener("mouseout") {
+
+            val cssClass = span.classList[0] ?: return@addEventListener
+
+            val spansWithSameClass = document.querySelectorAll(".$cssClass")
+
+            for (j in 0..spansWithSameClass.length) {
+
+                val sameClassSpan = spansWithSameClass[j] as? HTMLSpanElement ?: continue
+
+                sameClassSpan.classList.remove("marked")
+            }
+        }
     }
 }
 
