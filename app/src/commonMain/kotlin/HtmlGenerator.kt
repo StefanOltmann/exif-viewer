@@ -521,7 +521,7 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
-    appendLine("<div class=\"hex-box\">")
+    appendLine("<div class=\"hex-box\" style=\"font-family: monospace;\">")
 
     for (slice in slices) {
 
@@ -631,50 +631,6 @@ private fun generateHtmlFromSlices(
     }
 
     appendLine("</div>")
-
-    appendLine()
-
-    appendLine(
-        """
-        <style>
-            .hex-box {
-                font-family: monospace;
-            }
-
-            .highlight {
-                background-color: yellow;
-            }
-        </style>
-        """.trimIndent()
-    )
-
-    appendLine()
-
-    appendLine(
-        """
-        <script type="application/javascript">
-            document.addEventListener('DOMContentLoaded', function () {
-
-                const spans = document.querySelectorAll('.hex-box span');
-
-                spans.forEach(span => {
-
-                    span.addEventListener('mouseover', function () {
-                        const classes = Array.from(span.classList);
-                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
-                        spansWithSameClass.forEach(s => s.classList.add('highlight'));
-                    });
-
-                    span.addEventListener('mouseout', function () {
-                        const classes = Array.from(span.classList);
-                        const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
-                        spansWithSameClass.forEach(s => s.classList.remove('highlight'));
-                    });
-                });
-            });
-        </script>
-        """.trimIndent()
-    )
 }
 
 private fun centerMessageInLine(message: String): String {

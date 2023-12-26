@@ -1,4 +1,4 @@
-<div class="hex-box">
+<div class="hex-box" style="font-family: monospace;">
 00000000&nbsp;|&nbsp;4D&nbsp;4D&nbsp;00&nbsp;2A&nbsp;00&nbsp;1A&nbsp;FC&nbsp;64&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;MM.*...d&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;TIFF&nbsp;Header&nbsp;v42,&nbsp;BIG_ENDIAN<br>
 <hr style="height:1px;margin:1px;padding:0;border-width:0;color:#bbbbbb;background-color:#bbbbbb">
 00000008&nbsp;|&nbsp;00&nbsp;23&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;.#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;ExifIFD&nbsp;[35&nbsp;entries]<br>
@@ -166,35 +166,3 @@
 01780207&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ ... snip 8796 bytes ... ]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br>
 01789004&nbsp;|&nbsp;FF&nbsp;00&nbsp;FF&nbsp;25&nbsp;FF&nbsp;49&nbsp;FF&nbsp;6D&nbsp;&nbsp;FF&nbsp;92&nbsp;FF&nbsp;B6&nbsp;FF&nbsp;DB&nbsp;FF&nbsp;FF&nbsp;|&nbsp;<span class="IFD0-27">...%.I.m........</span>&nbsp;|&nbsp;<br>
 </div>
-
-<style>
-    .hex-box {
-        font-family: monospace;
-    }
-
-    .highlight {
-        background-color: yellow;
-    }
-</style>
-
-<script type="application/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-
-        const spans = document.querySelectorAll('.hex-box span');
-
-        spans.forEach(span => {
-
-            span.addEventListener('mouseover', function () {
-                const classes = Array.from(span.classList);
-                const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
-                spansWithSameClass.forEach(s => s.classList.add('highlight'));
-            });
-
-            span.addEventListener('mouseout', function () {
-                const classes = Array.from(span.classList);
-                const spansWithSameClass = document.querySelectorAll('.' + classes.join('.'));
-                spansWithSameClass.forEach(s => s.classList.remove('highlight'));
-            });
-        });
-    });
-</script>
