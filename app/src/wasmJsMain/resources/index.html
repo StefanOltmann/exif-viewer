@@ -199,17 +199,9 @@
 
     function toggleBoxContent(boxId) {
 
-        const box = document.getElementById(boxId);
-
-        if (box) {
-
-            const content = box.querySelector('.box-content');
-
-            if (content) {
-                content.style.display = content.style.display === 'none' ? 'block' : 'none';
-                box.classList.toggle('collapsed', content.style.display === 'none');
-            }
-        }
+        app.then(exports => {
+            exports.default.toggleBoxContent(boxId);
+        });
     }
 
     const unhandledError = (event, error) => {

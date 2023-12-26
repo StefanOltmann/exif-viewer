@@ -23,7 +23,14 @@ import com.ashampoo.kim.model.TiffOrientation
 import kotlinx.browser.document
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Uint8Array
-import org.w3c.dom.*
+import org.w3c.dom.DragEvent
+import org.w3c.dom.Element
+import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLImageElement
+import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLSpanElement
+import org.w3c.dom.get
 import org.w3c.dom.url.URL
 import org.w3c.files.File
 import org.w3c.files.FileReader
@@ -286,6 +293,31 @@ private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation
         } else {
 
             imageElement.src = ""
+        }
+    }
+}
+
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+private fun toggleBoxContent(boxId: String) {
+
+    val box = document.getElementById(boxId);
+
+    if (box != null) {
+
+        val content = box.querySelector(".box-content") as? HTMLDivElement
+
+        if (content != null) {
+
+            content.style.display = if(content.style.display == "none")
+                "block"
+            else
+                "none"
+
+            box.classList.toggle(
+                token = "collapsed",
+                force = content.style.display == "none"
+            )
         }
     }
 }
