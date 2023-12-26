@@ -427,7 +427,8 @@ private fun createTiffSlices(
                     label = label,
                     separatorLineType = SeparatorLineType.NONE,
                     highlightId = highlightId,
-                    highlightLabel = true
+                    highlightLabel = true,
+                    labelTooltip = field.valueDescription
                 )
             )
 
@@ -521,6 +522,8 @@ private fun generateHtmlFromSlices(
     slices: List<LabeledSlice>
 ): String = buildString {
 
+    val spanSb = StringBuilder()
+
     appendLine("<div class=\"hex-box\" style=\"font-family: monospace;\">")
 
     for (slice in slices) {
@@ -591,10 +594,31 @@ private fun generateHtmlFromSlices(
                 /* Write segment marker info on the line where it started. */
                 if (firstLineOfSegment) {
 
-                    if (slice.highlightId != null && slice.highlightLabel)
-                        append("<span class=\"${slice.highlightId}\">" + slice.label + "</span>")
-                    else
+                    val hasExtras = (slice.highlightId != null && slice.highlightLabel) ||
+                        slice.labelTooltip != null
+
+                    if (hasExtras) {
+
+                        spanSb.clear()
+
+                        spanSb.append("<span")
+
+                        if (slice.highlightId != null && slice.highlightLabel)
+                            spanSb.append(" class=\"${slice.highlightId}\"")
+
+                        if (slice.labelTooltip != null)
+                            spanSb.append(" title=\"${slice.labelTooltip}\"")
+
+                        spanSb.append(">")
+                        spanSb.append(slice.label)
+                        spanSb.append("</span>")
+
+                        append(spanSb.toString())
+
+                    } else {
+
                         append(slice.label)
+                    }
 
                     firstLineOfSegment = false
                 }

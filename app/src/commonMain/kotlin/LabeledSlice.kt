@@ -24,5 +24,6 @@ data class LabeledSlice(
     val snipAfterLineCount: Int = Int.MAX_VALUE,
     val separatorLineType: SeparatorLineType = SeparatorLineType.BOLD,
     val highlightId: String? = null,
-    val highlightLabel: Boolean = true
+    val highlightLabel: Boolean = true,
+    val labelTooltip: String? = null
 )
