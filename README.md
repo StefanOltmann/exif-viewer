@@ -1,4 +1,4 @@
-# exif-viewer
+# EXIF Viewer
 
 Web-based EXIF viewer built to view photo EXIF data details from
 a range of photo format's metadata including JPEG, PNG and TIFF image files.
@@ -13,5 +13,5 @@ please feel free to submit a pull request.
 
 ## License
 
-exif-viewer is licensed under the GNU Affero General Public License (AGPL),
+EXIF Viewer is licensed under the GNU Affero General Public License (AGPL),
 ensuring the community's freedom to use, modify, and distribute the software.
