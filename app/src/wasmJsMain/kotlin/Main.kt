@@ -30,6 +30,7 @@ import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLImageElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLSpanElement
+import org.w3c.dom.asList
 import org.w3c.dom.get
 import org.w3c.dom.url.URL
 import org.w3c.files.File
@@ -178,6 +179,8 @@ private fun processFile(uint8Array: Uint8Array) {
 
         updateThumbnail(metadata.getExifThumbnailBytes(), orientation)
 
+        makeAllBoxesVisible()
+
     } catch (ex: Exception) {
 
         ex.printStackTrace()
@@ -294,6 +297,18 @@ private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation
 
             imageElement.src = ""
         }
+    }
+}
+
+private fun makeAllBoxesVisible() {
+
+    val boxes = document.querySelectorAll(".box")
+
+    for (box in boxes.asList()) {
+
+        box as HTMLDivElement
+
+        box.style.display = "block"
     }
 }
 
