@@ -23,7 +23,7 @@ import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
-import com.ashampoo.kim.format.png.ChunkType
+import com.ashampoo.kim.format.png.PngChunkType
 import com.ashampoo.kim.format.png.PngConstants
 import com.ashampoo.kim.format.png.PngImageParser
 import com.ashampoo.kim.format.tiff.TiffDirectory
@@ -299,7 +299,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
 
         val crcOffset = dataOffset + chunk.length
 
-        if (chunk.chunkType == ChunkType.EXIF) {
+        if (chunk.chunkType == PngChunkType.EXIF) {
 
             slices.addAll(
                 createTiffSlices(

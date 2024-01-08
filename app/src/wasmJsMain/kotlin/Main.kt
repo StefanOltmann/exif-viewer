@@ -324,7 +324,7 @@ private fun toggleBoxContent(boxId: String) {
 
         if (content != null) {
 
-            content.style.display = if(content.style.display == "none")
+            content.style.display = if (content.style.display == "none")
                 "block"
             else
                 "none"
