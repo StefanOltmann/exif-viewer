@@ -1,6 +1,6 @@
 /*
  * exif-viewer
- * Copyright (C) 2023 Stefan Oltmann
+ * Copyright (C) 2024 Stefan Oltmann
  * https://stefan-oltmann.de/exif-viewer
  *
  * This program is free software: you can redistribute it and/or modify
