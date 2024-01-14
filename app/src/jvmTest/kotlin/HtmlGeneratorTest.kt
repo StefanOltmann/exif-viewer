@@ -178,4 +178,24 @@ class HtmlGeneratorTest {
             fail("HTML photo_4_hex.html differs.")
         }
     }
+
+    @Test
+    fun testGenerateHexHtmlHeic() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_5.heic").readBytes()
+
+        val actualHtml = generateHexHtml(imageBytes)
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_5_hex.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_5_hex.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_5_hex.html differs.")
+        }
+    }
 }

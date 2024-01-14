@@ -17,10 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import com.ashampoo.kim.common.MetadataType
 import com.ashampoo.kim.common.slice
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
+import com.ashampoo.kim.format.bmff.BoxReader
+import com.ashampoo.kim.format.bmff.BoxType
+import com.ashampoo.kim.format.bmff.boxes.MetaBox
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
 import com.ashampoo.kim.format.png.PngChunkType
@@ -50,8 +54,8 @@ private const val THIN_HR_HTML =
         "color:#eeeeee;background-color:#eeeeee\">"
 
 private const val BOLD_HR_HTML =
-    "<hr style=\"height:1px;margin:1px;padding:0;border-width:0;" +
-        "color:#bbbbbb;background-color:#bbbbbb\">"
+    "<hr style=\"height:2px;margin:1px;padding:0;border-width:0;" +
+        "color:#dddddd;background-color:#dddddd\">"
 
 fun ImageMetadata.toExifHtmlString(): String =
     buildString {
@@ -167,6 +171,7 @@ fun generateHexHtml(bytes: ByteArray): String {
         ImageFormat.JPEG -> generateHtmlFromSlices(bytes, createJpegSlices(bytes))
         ImageFormat.TIFF -> generateHtmlFromSlices(bytes, createTiffSlices(bytes, exifBytes = false))
         ImageFormat.PNG -> generateHtmlFromSlices(bytes, createPngSlices(bytes))
+        ImageFormat.HEIC -> generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
         else -> "HEX view for $format is not (yet) supported."
     }
 }
@@ -517,16 +522,206 @@ private fun createTiffSlices(
     return slices
 }
 
+private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice> {
+
+    val boxes = BoxReader.readBoxes(
+        byteReader = ByteArrayByteReader(bytes),
+        stopAfterMetaBox = false,
+        offsetShift = 0
+    )
+
+    val metaBox = boxes.find { it.type == BoxType.META } as? MetaBox
+
+    val metadataOffsets = metaBox?.findMetadataOffsets()
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    for (box in boxes) {
+
+        if (box == metaBox) {
+
+            box as MetaBox
+
+            val firstBoxOffset = box.boxes.first().offset.toInt()
+
+            slices.add(
+                LabeledSlice(
+                    range = box.offset.toInt() until firstBoxOffset,
+                    label = "Box" + SPACE + "meta" + SPACE + "header",
+                    separatorLineType = SeparatorLineType.BOLD,
+                    snipAfterLineCount = 3
+                )
+            )
+
+            val lastSubBox = box.boxes.last()
+
+            for (subBox in box.boxes) {
+
+                val separatorLineType = if (subBox == lastSubBox)
+                    SeparatorLineType.BOLD
+                else
+                    SeparatorLineType.THIN
+
+                val subBoxRange =
+                    subBox.offset.toInt() until subBox.offset.toInt() + subBox.length.toInt()
+
+                slices.add(
+                    LabeledSlice(
+                        range = subBoxRange,
+                        label = "Box" + SPACE + subBox.type + SPACE + "[" + subBox.length + SPACE + "bytes]",
+                        separatorLineType = separatorLineType,
+                        snipAfterLineCount = 3
+                    )
+                )
+            }
+
+        } else if (box.type == BoxType.MDAT && !metadataOffsets.isNullOrEmpty()) {
+
+            slices.add(
+                LabeledSlice(
+                    range = box.offset.toInt() until box.offset.toInt() + 8,
+                    label = "Box" + SPACE + "mdat" + SPACE + "header",
+                    separatorLineType = if (box.offset > 0)
+                        SeparatorLineType.BOLD
+                    else
+                        SeparatorLineType.NONE,
+                    snipAfterLineCount = 3
+                )
+            )
+
+            for (metadataOffset in metadataOffsets) {
+
+                val metadataRange =
+                    metadataOffset.offset.toInt() until metadataOffset.offset.toInt() + metadataOffset.length.toInt()
+
+                if (metadataOffset.type == MetadataType.EXIF) {
+
+                    /* EXIF Identifier */
+                    slices.add(
+                        LabeledSlice(
+                            range = metadataRange.first + 4 until metadataRange.first + 10,
+                            label = "EXIF" + SPACE + "Identifier",
+                            separatorLineType = SeparatorLineType.THIN
+                        )
+                    )
+
+                    val exifRange = metadataRange.first + 10 until metadataRange.last
+
+                    slices.addAll(
+                        createTiffSlices(
+                            bytes = bytes.sliceArray(exifRange),
+                            startPosition = exifRange.first,
+                            endPosition = exifRange.last,
+                            exifBytes = true
+                        )
+                    )
+
+                } else {
+
+                    slices.add(
+                        LabeledSlice(
+                            range = metadataRange,
+                            label = metadataOffset.type.toString(),
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 3
+                        )
+                    )
+                }
+            }
+
+        } else {
+
+            val boxRange = box.offset.toInt() until  box.offset.toInt() + box.length.toInt()
+
+            slices.add(
+                LabeledSlice(
+                    range = boxRange,
+                    label = "Box" + SPACE + box.type + SPACE + "[" + box.length + SPACE + "bytes]",
+                    separatorLineType = if (box.offset > 0)
+                        SeparatorLineType.BOLD
+                    else
+                        SeparatorLineType.NONE,
+                    snipAfterLineCount = 3
+                )
+            )
+        }
+    }
+
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    for (slice in slices)
+        println(slice)
+
+    return slices
+}
+
+/**
+ * To prevent missing parts of the document this method
+ * should check that nothing is missing or add it.
+ */
+private fun completeSlices(
+    byteCount: Int,
+    slices: List<LabeledSlice>
+): List<LabeledSlice> {
+
+    val completedSlices = mutableListOf<LabeledSlice>()
+
+    for (slice in slices) {
+
+        if (completedSlices.isEmpty()) {
+            completedSlices.add(slice)
+            continue
+        }
+
+        val lastSlice = completedSlices.last()
+
+        val needToFillGap = slice.range.first - lastSlice.range.last > 1
+
+        if (needToFillGap) {
+
+            completedSlices.add(
+                LabeledSlice(
+                    range = lastSlice.range.last + 1 until slice.range.first,
+                    label = "[unknown]",
+                    separatorLineType = SeparatorLineType.THIN
+                )
+            )
+        }
+
+        completedSlices.add(slice)
+    }
+
+    val lastSlice = completedSlices.last()
+
+    val needToFillToEnd = byteCount - lastSlice.range.last > 1
+
+    if (needToFillToEnd) {
+
+        completedSlices.add(
+            LabeledSlice(
+                range = lastSlice.range.last + 1 until byteCount,
+                label = "[unknown]",
+                separatorLineType = SeparatorLineType.THIN
+            )
+        )
+    }
+
+    return completedSlices
+}
+
 private fun generateHtmlFromSlices(
     bytes: ByteArray,
     slices: List<LabeledSlice>
 ): String = buildString {
 
+    val completedSlices = completeSlices(bytes.size, slices)
+
     val spanSb = StringBuilder()
 
     appendLine("<div class=\"hex-box\" style=\"font-family: monospace;\">")
 
-    for (slice in slices) {
+    for (slice in completedSlices) {
 
         val bytesOfLine = mutableListOf<Byte>()
 
