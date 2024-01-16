@@ -322,8 +322,8 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                     range = dataOffset until crcOffset,
                     label = chunk.chunkType.name + SPACE + "data" +
                         SPACE + "[${chunk.length}" + SPACE + "bytes]",
-                    /* Skip everything that is too long. */
-                    snipAfterLineCount = 1,
+                    /* Basically skip IDAT, but show more of other types. */
+                    snipAfterLineCount = if (chunk.chunkType == PngChunkType.IDAT) 1 else 5,
                     separatorLineType = SeparatorLineType.NONE
                 )
             )
