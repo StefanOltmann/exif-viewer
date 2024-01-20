@@ -655,10 +655,19 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                 )
             )
 
+            slices.add(
+                LabeledSlice(
+                    range = box.offset.toInt() + 8 until box.offset.toInt() + 12,
+                    label = "Box" + SPACE + "version" + SPACE + "and" + SPACE + "flags",
+                    separatorLineType = SeparatorLineType.NONE,
+                    snipAfterLineCount = 1
+                )
+            )
+
             slices.addAll(
                 createTiffSlices(
                     bytes = box.exifBytes,
-                    startPosition = box.offset.toInt() + 8,
+                    startPosition = box.offset.toInt() + 12,
                     endPosition = box.offset.toInt() + box.length.toInt(),
                     exifBytes = true
                 )
