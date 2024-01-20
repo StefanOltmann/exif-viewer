@@ -24,7 +24,8 @@ import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.bmff.BoxReader
 import com.ashampoo.kim.format.bmff.BoxType
-import com.ashampoo.kim.format.bmff.boxes.MetaBox
+import com.ashampoo.kim.format.bmff.box.ExifBox
+import com.ashampoo.kim.format.bmff.box.MetaBox
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
 import com.ashampoo.kim.format.png.PngChunkType
@@ -32,7 +33,7 @@ import com.ashampoo.kim.format.png.PngConstants
 import com.ashampoo.kim.format.png.PngImageParser
 import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.format.tiff.TiffReader
-import com.ashampoo.kim.format.tiff.constants.TiffConstants
+import com.ashampoo.kim.format.tiff.constant.TiffConstants
 import com.ashampoo.kim.input.ByteArrayByteReader
 import com.ashampoo.kim.model.ImageFormat
 
@@ -168,10 +169,19 @@ fun generateHexHtml(bytes: ByteArray): String {
     val format = ImageFormat.detect(bytes) ?: return "Image format was not recognized."
 
     return when (format) {
-        ImageFormat.JPEG -> generateHtmlFromSlices(bytes, createJpegSlices(bytes))
-        ImageFormat.TIFF -> generateHtmlFromSlices(bytes, createTiffSlices(bytes, exifBytes = false))
-        ImageFormat.PNG -> generateHtmlFromSlices(bytes, createPngSlices(bytes))
-        ImageFormat.HEIC -> generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
+
+        ImageFormat.JPEG ->
+            generateHtmlFromSlices(bytes, createJpegSlices(bytes))
+
+        ImageFormat.TIFF ->
+            generateHtmlFromSlices(bytes, createTiffSlices(bytes, exifBytes = false))
+
+        ImageFormat.PNG ->
+            generateHtmlFromSlices(bytes, createPngSlices(bytes))
+
+        ImageFormat.HEIC, ImageFormat.AVIF, ImageFormat.JXL ->
+            generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
+
         else -> "HEX view for $format is not (yet) supported."
     }
 }
@@ -526,7 +536,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
 
     val boxes = BoxReader.readBoxes(
         byteReader = ByteArrayByteReader(bytes),
-        stopAfterMetaBox = false,
+        stopAfterMetadataRead = false,
         offsetShift = 0
     )
 
@@ -629,9 +639,34 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                 }
             }
 
+        } else if (box.type == BoxType.EXIF) {
+
+            box as ExifBox
+
+            slices.add(
+                LabeledSlice(
+                    range = box.offset.toInt() until box.offset.toInt() + 8,
+                    label = "Box" + SPACE + "Exif" + SPACE + "header",
+                    separatorLineType = if (box.offset > 0)
+                        SeparatorLineType.BOLD
+                    else
+                        SeparatorLineType.NONE,
+                    snipAfterLineCount = 3
+                )
+            )
+
+            slices.addAll(
+                createTiffSlices(
+                    bytes = box.exifBytes,
+                    startPosition = box.offset.toInt() + 8,
+                    endPosition = box.offset.toInt() + box.length.toInt(),
+                    exifBytes = true
+                )
+            )
+
         } else {
 
-            val boxRange = box.offset.toInt() until  box.offset.toInt() + box.length.toInt()
+            val boxRange = box.offset.toInt() until box.offset.toInt() + box.length.toInt()
 
             slices.add(
                 LabeledSlice(
@@ -649,9 +684,6 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
 
     /* For safety sort in offset order. */
     slices.sortBy { it.range.first }
-
-    for (slice in slices)
-        println(slice)
 
     return slices
 }

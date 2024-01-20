@@ -18,7 +18,7 @@
  */
 
 import com.ashampoo.kim.Kim
-import com.ashampoo.kim.format.tiff.constants.TiffTag
+import com.ashampoo.kim.format.tiff.constant.TiffTag
 import com.ashampoo.kim.model.TiffOrientation
 import kotlinx.browser.document
 import org.khronos.webgl.ArrayBuffer
