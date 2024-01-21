@@ -304,7 +304,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
         slices.add(
             LabeledSlice(
                 range = startPosition until startPosition + 8,
-                label = chunk.chunkType.name,
+                label = chunk.type.name,
                 emphasisOnFirstBytes = 8,
                 separatorLineType = SeparatorLineType.BOLD
             )
@@ -312,9 +312,9 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
 
         val dataOffset = startPosition + 8
 
-        val crcOffset = dataOffset + chunk.length
+        val crcOffset = dataOffset + chunk.bytes.size
 
-        if (chunk.chunkType == PngChunkType.EXIF) {
+        if (chunk.type == PngChunkType.EXIF) {
 
             slices.addAll(
                 createTiffSlices(
@@ -325,15 +325,15 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                 )
             )
 
-        } else if (chunk.length > 0) {
+        } else if (chunk.bytes.isNotEmpty()) {
 
             slices.add(
                 LabeledSlice(
                     range = dataOffset until crcOffset,
-                    label = chunk.chunkType.name + SPACE + "data" +
-                        SPACE + "[${chunk.length}" + SPACE + "bytes]",
+                    label = chunk.type.name + SPACE + "data" +
+                        SPACE + "[${chunk.bytes.size}" + SPACE + "bytes]",
                     /* Basically skip IDAT, but show more of other types. */
-                    snipAfterLineCount = if (chunk.chunkType == PngChunkType.IDAT) 1 else 5,
+                    snipAfterLineCount = if (chunk.type == PngChunkType.IDAT) 1 else 5,
                     separatorLineType = SeparatorLineType.NONE
                 )
             )
@@ -342,7 +342,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
         slices.add(
             LabeledSlice(
                 range = crcOffset until crcOffset + PNG_CRC_BYTES_LENGTH,
-                label = chunk.chunkType.name + SPACE + "CRC",
+                label = chunk.type.name + SPACE + "CRC",
                 separatorLineType = SeparatorLineType.NONE
             )
         )
