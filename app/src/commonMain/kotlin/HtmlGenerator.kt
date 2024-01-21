@@ -34,6 +34,9 @@ import com.ashampoo.kim.format.png.PngImageParser
 import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.format.tiff.TiffReader
 import com.ashampoo.kim.format.tiff.constant.TiffConstants
+import com.ashampoo.kim.format.webp.WebPChunkType
+import com.ashampoo.kim.format.webp.WebPConstants
+import com.ashampoo.kim.format.webp.WebPImageParser
 import com.ashampoo.kim.input.ByteArrayByteReader
 import com.ashampoo.kim.model.ImageFormat
 
@@ -179,6 +182,9 @@ fun generateHexHtml(bytes: ByteArray): String {
         ImageFormat.PNG ->
             generateHtmlFromSlices(bytes, createPngSlices(bytes))
 
+        ImageFormat.WEBP ->
+            generateHtmlFromSlices(bytes, createWebPSlices(bytes))
+
         ImageFormat.HEIC, ImageFormat.AVIF, ImageFormat.JXL ->
             generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
 
@@ -304,8 +310,7 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
         slices.add(
             LabeledSlice(
                 range = startPosition until startPosition + 8,
-                label = chunk.type.name,
-                emphasisOnFirstBytes = 8,
+                label = chunk.type.name + SPACE + "chunk" + SPACE + "marker",
                 separatorLineType = SeparatorLineType.BOLD
             )
         )
@@ -348,6 +353,95 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
         )
 
         startPosition = crcOffset + PNG_CRC_BYTES_LENGTH
+    }
+
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    return slices
+}
+
+private fun createWebPSlices(bytes: ByteArray): List<LabeledSlice> {
+
+    val chunks = WebPImageParser.readChunks(
+        byteReader = ByteArrayByteReader(bytes)
+    )
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    slices.add(
+        LabeledSlice(
+            range = 0 until WebPConstants.RIFF_SIGNATURE.size,
+            label = "RIFF${SPACE}signature",
+            separatorLineType = SeparatorLineType.NONE
+        )
+    )
+
+    slices.add(
+        LabeledSlice(
+            range = WebPConstants.RIFF_SIGNATURE.size until 8,
+            label = "length",
+            separatorLineType = SeparatorLineType.THIN
+        )
+    )
+
+    slices.add(
+        LabeledSlice(
+            range = 8 until 12,
+            label = "WEBP${SPACE}signature",
+            separatorLineType = SeparatorLineType.THIN
+        )
+    )
+
+    var startPosition = WebPConstants.RIFF_SIGNATURE.size +
+        WebPConstants.CHUNK_SIZE_LENGTH +
+        WebPConstants.WEBP_SIGNATURE.size
+
+    for (chunk in chunks) {
+
+        slices.add(
+            LabeledSlice(
+                range = startPosition until startPosition + 8,
+                label = chunk.type.name + SPACE + "chunk" + SPACE + "marker",
+                emphasisOnFirstBytes = 4,
+                separatorLineType = SeparatorLineType.BOLD
+            )
+        )
+
+        val dataOffset = startPosition + WebPConstants.TPYE_LENGTH + WebPConstants.CHUNK_SIZE_LENGTH
+
+        /*
+         * WebP chunk lengths must be an even number
+         */
+        val paddingByteCount = (if (chunk.bytes.size % 2 == 0) 0 else 1)
+
+        val endPosition = dataOffset + chunk.bytes.size + paddingByteCount
+
+        if (chunk.type == WebPChunkType.EXIF) {
+
+            slices.addAll(
+                createTiffSlices(
+                    bytes = chunk.bytes,
+                    startPosition = dataOffset,
+                    endPosition = endPosition,
+                    exifBytes = true
+                )
+            )
+
+        } else if (chunk.bytes.isNotEmpty()) {
+
+            slices.add(
+                LabeledSlice(
+                    range = dataOffset until endPosition,
+                    label = chunk.type.name + SPACE + "data" +
+                        SPACE + "[${chunk.bytes.size}" + SPACE + "bytes]",
+                    snipAfterLineCount = if (chunk.type == WebPChunkType.XMP) 5 else 1,
+                    separatorLineType = SeparatorLineType.NONE
+                )
+            )
+        }
+
+        startPosition = endPosition
     }
 
     /* For safety sort in offset order. */
