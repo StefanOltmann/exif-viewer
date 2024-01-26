@@ -33,6 +33,7 @@ import com.ashampoo.kim.format.png.PngConstants
 import com.ashampoo.kim.format.png.PngImageParser
 import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.format.tiff.TiffReader
+import com.ashampoo.kim.format.tiff.constant.ExifTag
 import com.ashampoo.kim.format.tiff.constant.TiffConstants
 import com.ashampoo.kim.format.webp.WebPChunkType
 import com.ashampoo.kim.format.webp.WebPConstants
@@ -95,7 +96,7 @@ fun ImageMetadata.toExifHtmlString(): String =
                 append("</td>")
 
                 append("<td>")
-                append(entry.tagInfo?.let { it.name } ?: "Unknown")
+                append(entry.tagInfo?.name ?: "Unknown")
                 append("</td>")
 
                 append("<td>")
@@ -475,7 +476,12 @@ private fun createTiffSlices(
         )
     )
 
-    for (directory in tiffContents.directories) {
+    val mergedDirectories = if (tiffContents.makerNoteDirectory != null)
+        tiffContents.directories + tiffContents.makerNoteDirectory!!
+    else
+        tiffContents.directories
+
+    for (directory in mergedDirectories) {
 
         val directoryDescription = if (directory.type == 1)
             "IFD1" // Workaround for bad name in Kim
@@ -543,12 +549,19 @@ private fun createTiffSlices(
 
             field.valueOffset?.let { valueOffset ->
 
+                val skipMakerNoteValue =
+                    ExifTag.EXIF_TAG_MAKER_NOTE == field.tagInfo &&
+                    tiffContents.makerNoteDirectory != null
+
+                if (skipMakerNoteValue)
+                    return@let
+
                 val adjValueOffset = valueOffset + startPosition
 
                 slices.add(
                     LabeledSlice(
                         range = adjValueOffset until adjValueOffset + field.valueBytes.size,
-                        label = "${field.tagInfo?.name ?: "Unknown"} value".escapeSpaces(),
+                        label = "${field.tagInfo?.name ?: field.tagFormatted} value".escapeSpaces(),
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
                         snipAfterLineCount = 8,
                         separatorLineType = SeparatorLineType.NONE,
