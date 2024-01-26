@@ -95,7 +95,7 @@ fun ImageMetadata.toExifHtmlString(): String =
                 append("</td>")
 
                 append("<td>")
-                append(entry.tagInfo.name)
+                append(entry.tagInfo?.let { it.name } ?: "Unknown")
                 append("</td>")
 
                 append("<td>")
@@ -517,7 +517,7 @@ private fun createTiffSlices(
             val labelBase = "$directoryDescription-" +
                 "${field.sortHint.toString().padStart(2, '0')} " +
                 "${field.tagFormatted} " +
-                field.tagInfo.name
+                (field.tagInfo?.name ?: "Unknown")
 
             val label = if (adjustedValueOffset != null)
                 "$labelBase$SPACE(&rarr;$adjustedValueOffset)".escapeSpaces()
@@ -548,7 +548,7 @@ private fun createTiffSlices(
                 slices.add(
                     LabeledSlice(
                         range = adjValueOffset until adjValueOffset + field.valueBytes.size,
-                        label = "${field.tagInfo.name} value".escapeSpaces(),
+                        label = "${field.tagInfo?.name ?: "Unknown"} value".escapeSpaces(),
                         /* Skip very long value fields like Maker Note or XMP (in TIFF) */
                         snipAfterLineCount = 8,
                         separatorLineType = SeparatorLineType.NONE,
