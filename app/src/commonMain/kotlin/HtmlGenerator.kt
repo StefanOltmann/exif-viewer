@@ -79,7 +79,12 @@ fun ImageMetadata.toExifHtmlString(): String =
         append("<th>Value</th>")
         append("</tr>")
 
-        for (directory in exif!!.directories) {
+        val mergedDirectories = if (exif!!.makerNoteDirectory != null)
+            exif!!.directories + exif!!.makerNoteDirectory!!
+        else
+            exif!!.directories
+
+        for (directory in mergedDirectories) {
 
             val directoryDescription = TiffDirectory.description(directory.type)
 
