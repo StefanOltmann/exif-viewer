@@ -24,10 +24,10 @@ import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.bmff.BoxReader
 import com.ashampoo.kim.format.bmff.BoxType
-import com.ashampoo.kim.format.bmff.box.ExifBox
 import com.ashampoo.kim.format.bmff.box.MetaBox
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
+import com.ashampoo.kim.format.jxl.box.ExifBox
 import com.ashampoo.kim.format.png.PngChunkType
 import com.ashampoo.kim.format.png.PngConstants
 import com.ashampoo.kim.format.png.PngImageParser
@@ -685,12 +685,12 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                     SeparatorLineType.THIN
 
                 val subBoxRange =
-                    subBox.offset.toInt() until subBox.offset.toInt() + subBox.length.toInt()
+                    subBox.offset.toInt() until subBox.offset.toInt() + subBox.actualLength.toInt()
 
                 slices.add(
                     LabeledSlice(
                         range = subBoxRange,
-                        label = "Box" + SPACE + subBox.type + SPACE + "[" + subBox.length + SPACE + "bytes]",
+                        label = "Box" + SPACE + subBox.type + SPACE + "[" + subBox.actualLength + SPACE + "bytes]",
                         separatorLineType = separatorLineType,
                         snipAfterLineCount = 3
                     )
@@ -780,19 +780,19 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                 createTiffSlices(
                     bytes = box.exifBytes,
                     startPosition = box.offset.toInt() + 12,
-                    endPosition = box.offset.toInt() + box.length.toInt(),
+                    endPosition = box.offset.toInt() + box.actualLength.toInt(),
                     exifBytes = true
                 )
             )
 
         } else {
 
-            val boxRange = box.offset.toInt() until box.offset.toInt() + box.length.toInt()
+            val boxRange = box.offset.toInt() until box.offset.toInt() + box.actualLength.toInt()
 
             slices.add(
                 LabeledSlice(
                     range = boxRange,
-                    label = "Box" + SPACE + box.type + SPACE + "[" + box.length + SPACE + "bytes]",
+                    label = "Box" + SPACE + box.type + SPACE + "[" + box.actualLength + SPACE + "bytes]",
                     separatorLineType = if (box.offset > 0)
                         SeparatorLineType.BOLD
                     else
