@@ -713,8 +713,17 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
 
             for (metadataOffset in metadataOffsets) {
 
+                val boxRange = box.offset.toInt() until box.offset.toInt() + box.actualLength
+
+                /*
+                 * Files might contain multiple MDAT boxes.
+                 * We only want to report extents that fall into this specific range.
+                 */
+                if (!boxRange.contains(metadataOffset.offset))
+                    continue
+
                 val metadataRange =
-                    metadataOffset.offset.toInt() until metadataOffset.offset.toInt() + metadataOffset.length.toInt()
+                    metadataOffset.offset.toInt() until metadataOffset.endPosition.toInt()
 
                 if (metadataOffset.type == MetadataType.EXIF) {
 
