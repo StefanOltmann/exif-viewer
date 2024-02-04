@@ -179,14 +179,20 @@ private fun processFile(uint8Array: Uint8Array) {
 
         updateThumbnail(metadata.getExifThumbnailBytes(), orientation)
 
-        makeAllBoxesVisible()
-
     } catch (ex: Exception) {
 
         ex.printStackTrace()
 
         updateAll("Parsing error: ${ex.message}")
         updateThumbnail(null, TiffOrientation.STANDARD)
+
+    } finally {
+
+        /*
+         * Make all boxes visible even if there is an error or
+         * the error message would not be shown to the user.
+         */
+        makeAllBoxesVisible()
     }
 }
 
