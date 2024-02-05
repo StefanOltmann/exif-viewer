@@ -1031,7 +1031,7 @@ private fun toPaddedPos(pos: Int) =
     else
         pos.toString().padStart(POS_COUNTER_LENGTH, '0')
 
-private fun String.escapeHtmlSpecialChars(): String =
+fun String.escapeHtmlSpecialChars(): String =
     this.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")

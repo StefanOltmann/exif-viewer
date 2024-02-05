@@ -18,7 +18,13 @@
  */
 
 import com.ashampoo.kim.Kim
+import com.ashampoo.kim.format.png.PngChunkType
+import com.ashampoo.kim.format.png.PngConstants
+import com.ashampoo.kim.format.png.PngImageParser
+import com.ashampoo.kim.format.png.chunk.PngTextChunk
 import com.ashampoo.kim.format.tiff.constant.TiffTag
+import com.ashampoo.kim.input.ByteArrayByteReader
+import com.ashampoo.kim.model.ImageFormat
 import com.ashampoo.kim.model.TiffOrientation
 import kotlinx.browser.document
 import org.khronos.webgl.ArrayBuffer
@@ -48,6 +54,9 @@ private val iptcBox =
 private val xmpBox =
     document.getElementById("xmp-box") as HTMLDivElement
 
+private val textBox =
+    document.getElementById("text-box") as HTMLDivElement
+
 private val hexBox =
     document.getElementById("hex-box") as HTMLDivElement
 
@@ -62,6 +71,9 @@ private val iptcElement =
 
 private val xmpElement =
     document.getElementById("xmp") as Element
+
+private val textElement =
+    document.getElementById("text") as Element
 
 private val hexElement =
     document.getElementById("hex") as Element
@@ -167,6 +179,7 @@ private fun processFile(uint8Array: Uint8Array) {
                 exifBoxVisible = true, // to show the message
                 iptcBoxVisible = false,
                 xmpBoxVisible = false,
+                textBoxVisible = false,
                 hexBoxVisible = false
             )
 
@@ -206,6 +219,50 @@ private fun processFile(uint8Array: Uint8Array) {
 
         updateThumbnail(exifThumbnailBytes, orientation)
 
+        var displayTextChunk = false
+
+        if (metadata.imageFormat == ImageFormat.PNG) {
+
+            val textChunks = PngImageParser.readChunks(
+                byteReader = ByteArrayByteReader(bytes),
+                chunkTypeFilter = listOf(
+                    PngChunkType.TEXT,
+                    PngChunkType.ITXT,
+                    PngChunkType.ZTXT
+                )
+            )
+
+            /*
+             * We are only interested in extra texts that are not
+             * translated into EXIF, IPTC or XMP.
+             */
+            val unknownTextChunks = textChunks
+                .filterIsInstance<PngTextChunk>()
+                .filterNot {
+                    it.getKeyword() == PngConstants.XMP_KEYWORD ||
+                        it.getKeyword() == PngConstants.EXIF_KEYWORD ||
+                        it.getKeyword() == PngConstants.IPTC_KEYWORD
+                }
+
+            if (unknownTextChunks.isNotEmpty()) {
+
+                val sb = StringBuilder()
+
+                for (chunk in unknownTextChunks) {
+
+                    sb.appendLine("<h3>${chunk.getKeyword()}</h3>")
+                    sb.appendLine(chunk.getText().escapeHtmlSpecialChars())
+                    sb.appendLine()
+                }
+
+                val text = sb.toString()
+
+                updateHtml(textElement, text)
+
+                displayTextChunk = text.isNotBlank()
+            }
+        }
+
         /*
          * Set all boxes visible that have meaningful content.
          */
@@ -214,6 +271,7 @@ private fun processFile(uint8Array: Uint8Array) {
             exifBoxVisible = metadata.exif != null,
             iptcBoxVisible = metadata.iptc != null,
             xmpBoxVisible = metadata.xmp != null,
+            textBoxVisible = displayTextChunk,
             hexBoxVisible = true
         )
 
@@ -344,6 +402,7 @@ private fun setBoxVisibility(
     exifBoxVisible: Boolean,
     iptcBoxVisible: Boolean,
     xmpBoxVisible: Boolean,
+    textBoxVisible: Boolean,
     hexBoxVisible: Boolean
 ) {
 
@@ -351,6 +410,7 @@ private fun setBoxVisibility(
     exifBox.style.display = cssDisplayValue(exifBoxVisible)
     iptcBox.style.display = cssDisplayValue(iptcBoxVisible)
     xmpBox.style.display = cssDisplayValue(xmpBoxVisible)
+    textBox.style.display = cssDisplayValue(textBoxVisible)
     hexBox.style.display = cssDisplayValue(hexBoxVisible)
 }
 
@@ -363,6 +423,7 @@ private fun makeAllBoxesVisible() =
         exifBoxVisible = true,
         iptcBoxVisible = true,
         xmpBoxVisible = true,
+        textBoxVisible = false,
         hexBoxVisible = true
     )
 
