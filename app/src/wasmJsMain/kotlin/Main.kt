@@ -30,29 +30,43 @@ import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLImageElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLSpanElement
-import org.w3c.dom.asList
 import org.w3c.dom.get
 import org.w3c.dom.url.URL
 import org.w3c.files.File
 import org.w3c.files.FileReader
 import org.w3c.files.get
 
-private var exifElement: Element? = null
-private var iptcElement: Element? = null
-private var xmpElement: Element? = null
-private var hexElement: Element? = null
+private val thumbnailBox =
+    document.getElementById("thumbnail-box") as HTMLDivElement
 
-private var htmlThumbnailImageElement: HTMLImageElement? = null
+private val exifBox =
+    document.getElementById("exif-box") as HTMLDivElement
+
+private val iptcBox =
+    document.getElementById("iptc-box") as HTMLDivElement
+
+private val xmpBox =
+    document.getElementById("xmp-box") as HTMLDivElement
+
+private val hexBox =
+    document.getElementById("hex-box") as HTMLDivElement
+
+private val thumbnailElement: HTMLImageElement =
+    document.getElementById("thumbnail") as HTMLImageElement
+
+private val exifElement =
+    document.getElementById("exif") as Element
+
+private val iptcElement =
+    document.getElementById("iptc") as Element
+
+private val xmpElement =
+    document.getElementById("xmp") as Element
+
+private val hexElement =
+    document.getElementById("hex") as Element
 
 fun main() {
-
-    exifElement = document.getElementById("exif")
-    iptcElement = document.getElementById("iptc")
-    xmpElement = document.getElementById("xmp")
-    hexElement = document.getElementById("hex")
-
-    htmlThumbnailImageElement = document.getElementById("thumbnail") as? HTMLImageElement
-
     registerFileInputEvents()
 }
 
@@ -143,8 +157,19 @@ private fun processFile(uint8Array: Uint8Array) {
         val metadata = Kim.readMetadata(bytes)
 
         if (metadata == null) {
+
             updateAll("No metadata found.")
+
             updateThumbnail(null, TiffOrientation.STANDARD)
+
+            setBoxVisibility(
+                thumbnailBoxVisible = false,
+                exifBoxVisible = true, // to show the message
+                iptcBoxVisible = false,
+                xmpBoxVisible = false,
+                hexBoxVisible = false
+            )
+
             return
         }
 
@@ -177,7 +202,20 @@ private fun processFile(uint8Array: Uint8Array) {
             metadata.findShortValue(TiffTag.TIFF_TAG_ORIENTATION)?.toInt()
         ) ?: TiffOrientation.STANDARD
 
-        updateThumbnail(metadata.getExifThumbnailBytes(), orientation)
+        val exifThumbnailBytes = metadata.getExifThumbnailBytes()
+
+        updateThumbnail(exifThumbnailBytes, orientation)
+
+        /*
+         * Set all boxes visible that have meaningful content.
+         */
+        setBoxVisibility(
+            thumbnailBoxVisible = exifThumbnailBytes != null,
+            exifBoxVisible = metadata.exif != null,
+            iptcBoxVisible = metadata.iptc != null,
+            xmpBoxVisible = metadata.xmp != null,
+            hexBoxVisible = true
+        )
 
     } catch (ex: Exception) {
 
@@ -185,8 +223,6 @@ private fun processFile(uint8Array: Uint8Array) {
 
         updateAll("Parsing error: ${ex.message}")
         updateThumbnail(null, TiffOrientation.STANDARD)
-
-    } finally {
 
         /*
          * Make all boxes visible even if there is an error or
@@ -249,74 +285,86 @@ private fun updateHtml(element: Element?, html: String) =
 
 private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation) {
 
-    htmlThumbnailImageElement?.let { imageElement ->
+    if (imageBytes != null) {
 
-        if (imageBytes != null) {
+        val blob = imageBytes.toBlob("image/jpeg")
 
-            val blob = imageBytes.toBlob("image/jpeg")
+        val url = URL.Companion.createObjectURL(blob)
 
-            val url = URL.Companion.createObjectURL(blob)
+        thumbnailElement.src = url
 
-            imageElement.src = url
-
-            /*
-             * Use CSS to rotate the image to keep the original image bytes.
-             * If the user saves the image to disk it should still be identical to
-             * the output of "exiftool -b -ThumbnailImage test.jpg > thumb.jpg".
-             */
-            val styleTransform = when (orientation) {
-                TiffOrientation.MIRROR_HORIZONTAL -> "scale(-1, 1)"
-                TiffOrientation.UPSIDE_DOWN -> "rotate(180deg)"
-                TiffOrientation.MIRROR_VERTICAL -> "scale(1, -1)"
-                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT -> "rotate(-90deg) scale(1, -1)"
-                TiffOrientation.ROTATE_RIGHT -> "rotate(90deg)"
-                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> "rotate(90deg) scale(1, -1)"
-                TiffOrientation.ROTATE_LEFT -> "rotate(-90deg)"
-                else -> ""
-            }
-
-            imageElement.style.transform = styleTransform
-
-            /*
-             * After the image was loaded, we can use the dimensions to scale
-             * the image down to match the parent container's size
-             */
-            imageElement.onload = {
-
-                when (orientation) {
-                    TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT, TiffOrientation.ROTATE_RIGHT,
-                    TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT, TiffOrientation.ROTATE_LEFT -> {
-
-                        val naturalWidth = imageElement.width * 1.0
-                        val naturalHeight = imageElement.height * 1.0
-
-                        val scale = if (naturalWidth > naturalHeight) (naturalHeight / naturalWidth) else 1
-
-                        imageElement.style.transform += " scale($scale)"
-                    }
-
-                    else -> {}
-                }
-            }
-
-        } else {
-
-            imageElement.src = ""
+        /*
+         * Use CSS to rotate the image to keep the original image bytes.
+         * If the user saves the image to disk it should still be identical to
+         * the output of "exiftool -b -ThumbnailImage test.jpg > thumb.jpg".
+         */
+        val styleTransform = when (orientation) {
+            TiffOrientation.MIRROR_HORIZONTAL -> "scale(-1, 1)"
+            TiffOrientation.UPSIDE_DOWN -> "rotate(180deg)"
+            TiffOrientation.MIRROR_VERTICAL -> "scale(1, -1)"
+            TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT -> "rotate(-90deg) scale(1, -1)"
+            TiffOrientation.ROTATE_RIGHT -> "rotate(90deg)"
+            TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> "rotate(90deg) scale(1, -1)"
+            TiffOrientation.ROTATE_LEFT -> "rotate(-90deg)"
+            else -> ""
         }
+
+        thumbnailElement.style.transform = styleTransform
+
+        /*
+         * After the image was loaded, we can use the dimensions to scale
+         * the image down to match the parent container's size
+         */
+        thumbnailElement.onload = {
+
+            when (orientation) {
+                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT, TiffOrientation.ROTATE_RIGHT,
+                TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT, TiffOrientation.ROTATE_LEFT -> {
+
+                    val naturalWidth = thumbnailElement.width * 1.0
+                    val naturalHeight = thumbnailElement.height * 1.0
+
+                    val scale = if (naturalWidth > naturalHeight) (naturalHeight / naturalWidth) else 1
+
+                    thumbnailElement.style.transform += " scale($scale)"
+                }
+
+                else -> {}
+            }
+        }
+
+    } else {
+
+        thumbnailElement.src = ""
     }
 }
 
-private fun makeAllBoxesVisible() {
+private fun setBoxVisibility(
+    thumbnailBoxVisible: Boolean,
+    exifBoxVisible: Boolean,
+    iptcBoxVisible: Boolean,
+    xmpBoxVisible: Boolean,
+    hexBoxVisible: Boolean
+) {
 
-    val boxes = document.querySelectorAll(".box")
-
-    for (box in boxes.asList()) {
-
-        box as HTMLDivElement
-
-        box.style.display = "block"
-    }
+    thumbnailBox.style.display = cssDisplayValue(thumbnailBoxVisible)
+    exifBox.style.display = cssDisplayValue(exifBoxVisible)
+    iptcBox.style.display = cssDisplayValue(iptcBoxVisible)
+    xmpBox.style.display = cssDisplayValue(xmpBoxVisible)
+    hexBox.style.display = cssDisplayValue(hexBoxVisible)
 }
+
+private fun cssDisplayValue(shouldDisplay: Boolean) =
+    if (shouldDisplay) "block" else "none"
+
+private fun makeAllBoxesVisible() =
+    setBoxVisibility(
+        thumbnailBoxVisible = true,
+        exifBoxVisible = true,
+        iptcBoxVisible = true,
+        xmpBoxVisible = true,
+        hexBoxVisible = true
+    )
 
 @OptIn(ExperimentalJsExport::class)
 @JsExport
