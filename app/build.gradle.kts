@@ -31,7 +31,7 @@ kotlin {
         val wasmJsMain by getting
 
         commonMain.dependencies {
-            api("com.ashampoo:kim:0.13.2")
+            api("com.ashampoo:kim:0.14")
         }
 
         commonTest.dependencies {
