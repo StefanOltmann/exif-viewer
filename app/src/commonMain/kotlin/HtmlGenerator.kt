@@ -24,6 +24,7 @@ import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.bmff.BoxReader
 import com.ashampoo.kim.format.bmff.BoxType
+import com.ashampoo.kim.format.bmff.box.ItemLocationBox
 import com.ashampoo.kim.format.bmff.box.MetaBox
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
@@ -556,7 +557,7 @@ private fun createTiffSlices(
 
                 val skipMakerNoteValue =
                     ExifTag.EXIF_TAG_MAKER_NOTE == field.tagInfo &&
-                    tiffContents.makerNoteDirectory != null
+                        tiffContents.makerNoteDirectory != null
 
                 if (skipMakerNoteValue)
                     return@let
@@ -660,9 +661,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
 
     for (box in boxes) {
 
-        if (box == metaBox) {
-
-            box as MetaBox
+        if (box is MetaBox) {
 
             val firstBoxOffset = box.boxes.first().offset.toInt()
 
@@ -679,22 +678,118 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
 
             for (subBox in box.boxes) {
 
-                val separatorLineType = if (subBox == lastSubBox)
-                    SeparatorLineType.BOLD
-                else
-                    SeparatorLineType.THIN
+                if (subBox is ItemLocationBox) {
 
-                val subBoxRange =
-                    subBox.offset.toInt() until subBox.offset.toInt() + subBox.actualLength.toInt()
-
-                slices.add(
-                    LabeledSlice(
-                        range = subBoxRange,
-                        label = "Box" + SPACE + subBox.type + SPACE + "[" + subBox.actualLength + SPACE + "bytes]",
-                        separatorLineType = separatorLineType,
-                        snipAfterLineCount = 3
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() until subBox.offset.toInt() + 8,
+                            label = "Box" + SPACE + "iloc" + SPACE + "header",
+                            separatorLineType = SeparatorLineType.BOLD,
+                            snipAfterLineCount = 3
+                        )
                     )
-                )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() + 8 until subBox.offset.toInt() + 9,
+                            label = "Box" + SPACE + "version" + SPACE + "=" + SPACE + subBox.version,
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 1
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() + 9 until subBox.offset.toInt() + 12,
+                            label = "Box" + SPACE + "flags",
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 1
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() + 12 until subBox.offset.toInt() + 13,
+                            label = (
+                                "Offset size = ${subBox.offsetSize}, " +
+                                    "length size = ${subBox.lengthSize}"
+                                ).escapeHtmlSpecialChars(),
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 1
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() + 13 until subBox.offset.toInt() + 14,
+                            label = (
+                                "Base offset size = ${subBox.baseOffsetSize}, " +
+                                    "index size = ${subBox.indexSize}"
+                                ).escapeHtmlSpecialChars(),
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 1
+                        )
+                    )
+
+                    var dataStartOffset: Int
+
+                    if (subBox.version < 2) {
+
+                        slices.add(
+                            LabeledSlice(
+                                range = subBox.offset.toInt() + 14 until subBox.offset.toInt() + 16,
+                                label = "Item count = ${subBox.itemCount}".escapeHtmlSpecialChars(),
+                                separatorLineType = SeparatorLineType.THIN,
+                                snipAfterLineCount = 1
+                            )
+                        )
+
+                        dataStartOffset = subBox.offset.toInt() + 16
+
+                    } else {
+
+                        slices.add(
+                            LabeledSlice(
+                                range = subBox.offset.toInt() + 14 until subBox.offset.toInt() + 18,
+                                label = "Item count = ${subBox.itemCount}".escapeHtmlSpecialChars(),
+                                separatorLineType = SeparatorLineType.THIN,
+                                snipAfterLineCount = 1
+                            )
+                        )
+
+                        dataStartOffset = subBox.offset.toInt() + 18
+                    }
+
+                    // TODO Decode the rest of the box
+
+                    slices.add(
+                        LabeledSlice(
+                            range = dataStartOffset until subBox.offset.toInt() + box.actualLength.toInt(),
+                            label = "Box" + SPACE + "iloc" + SPACE + "data",
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 3
+                        )
+                    )
+
+                } else {
+
+                    val separatorLineType = if (subBox == lastSubBox)
+                        SeparatorLineType.BOLD
+                    else
+                        SeparatorLineType.THIN
+
+                    val subBoxRange =
+                        subBox.offset.toInt() until subBox.offset.toInt() + subBox.actualLength.toInt()
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBoxRange,
+                            label = "Box" + SPACE + subBox.type + SPACE + "[" + subBox.actualLength + SPACE + "bytes]",
+                            separatorLineType = separatorLineType,
+                            snipAfterLineCount = 3
+                        )
+                    )
+                }
             }
 
         } else if (box.type == BoxType.MDAT && !metadataOffsets.isNullOrEmpty()) {
@@ -760,9 +855,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                 }
             }
 
-        } else if (box.type == BoxType.EXIF) {
-
-            box as ExifBox
+        } else if (box is ExifBox) {
 
             slices.add(
                 LabeledSlice(
