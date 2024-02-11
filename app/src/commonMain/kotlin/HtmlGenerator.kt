@@ -687,7 +687,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         LabeledSlice(
                             range = subBox.offset.toInt() until subBox.offset.toInt() + 8,
                             label = "Box" + SPACE + "iloc" + SPACE + "header",
-                            separatorLineType = SeparatorLineType.BOLD,
+                            separatorLineType = SeparatorLineType.THIN,
                             snipAfterLineCount = 3
                         )
                     )
@@ -696,7 +696,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         LabeledSlice(
                             range = subBox.offset.toInt() + 8 until subBox.offset.toInt() + 9,
                             label = "Box" + SPACE + "version" + SPACE + "=" + SPACE + subBox.version,
-                            separatorLineType = SeparatorLineType.THIN,
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 1
                         )
                     )
@@ -705,7 +705,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         LabeledSlice(
                             range = subBox.offset.toInt() + 9 until subBox.offset.toInt() + 12,
                             label = "Box" + SPACE + "flags",
-                            separatorLineType = SeparatorLineType.THIN,
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 1
                         )
                     )
@@ -717,7 +717,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                                 "Offset size = ${subBox.offsetSize}, " +
                                     "length size = ${subBox.lengthSize}"
                                 ).escapeHtmlSpecialChars(),
-                            separatorLineType = SeparatorLineType.THIN,
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 1
                         )
                     )
@@ -729,7 +729,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                                 "Base offset size = ${subBox.baseOffsetSize}, " +
                                     "index size = ${subBox.indexSize}"
                                 ).escapeHtmlSpecialChars(),
-                            separatorLineType = SeparatorLineType.THIN,
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 1
                         )
                     )
@@ -742,7 +742,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                             LabeledSlice(
                                 range = subBox.offset.toInt() + 14 until subBox.offset.toInt() + 16,
                                 label = "Item count = ${subBox.itemCount}".escapeHtmlSpecialChars(),
-                                separatorLineType = SeparatorLineType.THIN,
+                                separatorLineType = SeparatorLineType.NONE,
                                 snipAfterLineCount = 1
                             )
                         )
@@ -755,7 +755,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                             LabeledSlice(
                                 range = subBox.offset.toInt() + 14 until subBox.offset.toInt() + 18,
                                 label = "Item count = ${subBox.itemCount}".escapeHtmlSpecialChars(),
-                                separatorLineType = SeparatorLineType.THIN,
+                                separatorLineType = SeparatorLineType.NONE,
                                 snipAfterLineCount = 1
                             )
                         )
@@ -768,8 +768,8 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                     slices.add(
                         LabeledSlice(
                             range = dataStartOffset until subBox.offset.toInt() + box.actualLength.toInt(),
-                            label = "Box" + SPACE + "iloc" + SPACE + "data",
-                            separatorLineType = SeparatorLineType.THIN,
+                            label = "data",
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 3
                         )
                     )
@@ -780,7 +780,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         LabeledSlice(
                             range = subBox.offset.toInt() until subBox.offset.toInt() + 8,
                             label = "Box" + SPACE + "iinf" + SPACE + "header",
-                            separatorLineType = SeparatorLineType.BOLD,
+                            separatorLineType = SeparatorLineType.THIN,
                             snipAfterLineCount = 3
                         )
                     )
@@ -789,7 +789,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         LabeledSlice(
                             range = subBox.offset.toInt() + 8 until subBox.offset.toInt() + 9,
                             label = "Box" + SPACE + "version" + SPACE + "=" + SPACE + subBox.version,
-                            separatorLineType = SeparatorLineType.THIN,
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 1
                         )
                     )
@@ -798,7 +798,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         LabeledSlice(
                             range = subBox.offset.toInt() + 9 until subBox.offset.toInt() + 12,
                             label = "Box" + SPACE + "flags",
-                            separatorLineType = SeparatorLineType.THIN,
+                            separatorLineType = SeparatorLineType.NONE,
                             snipAfterLineCount = 1
                         )
                     )
@@ -809,17 +809,18 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                             LabeledSlice(
                                 range = subBox.offset.toInt() + 12 until subBox.offset.toInt() + 14,
                                 label = "Entry count = ${subBox.entryCount}".escapeHtmlSpecialChars(),
-                                separatorLineType = SeparatorLineType.THIN,
+                                separatorLineType = SeparatorLineType.NONE,
                                 snipAfterLineCount = 1
                             )
                         )
+
                     } else {
 
                         slices.add(
                             LabeledSlice(
                                 range = subBox.offset.toInt() + 12 until subBox.offset.toInt() + 16,
                                 label = "Entry count = ${subBox.entryCount}".escapeHtmlSpecialChars(),
-                                separatorLineType = SeparatorLineType.THIN,
+                                separatorLineType = SeparatorLineType.NONE,
                                 snipAfterLineCount = 1
                             )
                         )
