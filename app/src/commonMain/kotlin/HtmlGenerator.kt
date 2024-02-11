@@ -19,11 +19,14 @@
 
 import com.ashampoo.kim.common.MetadataType
 import com.ashampoo.kim.common.slice
+import com.ashampoo.kim.common.toFourCCTypeString
 import com.ashampoo.kim.common.toHex
 import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.bmff.BoxReader
 import com.ashampoo.kim.format.bmff.BoxType
+import com.ashampoo.kim.format.bmff.box.ItemInfoEntryBox
+import com.ashampoo.kim.format.bmff.box.ItemInformationBox
 import com.ashampoo.kim.format.bmff.box.ItemLocationBox
 import com.ashampoo.kim.format.bmff.box.MetaBox
 import com.ashampoo.kim.format.jpeg.JpegConstants
@@ -770,6 +773,83 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                             snipAfterLineCount = 3
                         )
                     )
+
+                } else if (subBox is ItemInformationBox) {
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() until subBox.offset.toInt() + 8,
+                            label = "Box" + SPACE + "iinf" + SPACE + "header",
+                            separatorLineType = SeparatorLineType.BOLD,
+                            snipAfterLineCount = 3
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() + 8 until subBox.offset.toInt() + 9,
+                            label = "Box" + SPACE + "version" + SPACE + "=" + SPACE + subBox.version,
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 1
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = subBox.offset.toInt() + 9 until subBox.offset.toInt() + 12,
+                            label = "Box" + SPACE + "flags",
+                            separatorLineType = SeparatorLineType.THIN,
+                            snipAfterLineCount = 1
+                        )
+                    )
+
+                    if (subBox.version == 0) {
+
+                        slices.add(
+                            LabeledSlice(
+                                range = subBox.offset.toInt() + 12 until subBox.offset.toInt() + 14,
+                                label = "Entry count = ${subBox.entryCount}".escapeHtmlSpecialChars(),
+                                separatorLineType = SeparatorLineType.THIN,
+                                snipAfterLineCount = 1
+                            )
+                        )
+                    } else {
+
+                        slices.add(
+                            LabeledSlice(
+                                range = subBox.offset.toInt() + 12 until subBox.offset.toInt() + 16,
+                                label = "Entry count = ${subBox.entryCount}".escapeHtmlSpecialChars(),
+                                separatorLineType = SeparatorLineType.THIN,
+                                snipAfterLineCount = 1
+                            )
+                        )
+                    }
+
+                    for (infeBox in subBox.boxes) {
+
+                        infeBox as ItemInfoEntryBox
+
+                        // FIXME Offset bug in Kim v0.14?
+                        val infeBoxOffset = infeBox.offset.toInt() + 2
+
+                        val subBoxRange =
+                            infeBoxOffset until infeBoxOffset + infeBox.actualLength.toInt()
+
+                        val itemTypeFourCC = infeBox.itemType.toFourCCTypeString()
+
+                        val label =
+                            "Item #${infeBox.itemId} @ ${infeBox.itemProtectionIndex} = $itemTypeFourCC".
+                                escapeHtmlSpecialChars()
+
+                        slices.add(
+                            LabeledSlice(
+                                range = subBoxRange,
+                                label = label,
+                                separatorLineType = SeparatorLineType.NONE,
+                                snipAfterLineCount = 3
+                            )
+                        )
+                    }
 
                 } else {
 
