@@ -186,7 +186,12 @@ fun generateHexHtml(bytes: ByteArray): String {
         ImageFormat.JPEG ->
             generateHtmlFromSlices(bytes, createJpegSlices(bytes))
 
-        ImageFormat.TIFF ->
+        ImageFormat.TIFF,
+        ImageFormat.CR2,
+        ImageFormat.NEF,
+        ImageFormat.ARW,
+        ImageFormat.RW2,
+        ImageFormat.ORF ->
             generateHtmlFromSlices(bytes, createTiffSlices(bytes, exifBytes = false))
 
         ImageFormat.PNG ->
@@ -195,7 +200,9 @@ fun generateHexHtml(bytes: ByteArray): String {
         ImageFormat.WEBP ->
             generateHtmlFromSlices(bytes, createWebPSlices(bytes))
 
-        ImageFormat.HEIC, ImageFormat.AVIF, ImageFormat.JXL ->
+        ImageFormat.HEIC,
+        ImageFormat.AVIF,
+        ImageFormat.JXL ->
             generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
 
         else -> "HEX view for $format is not (yet) supported."
@@ -839,8 +846,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         val itemTypeFourCC = infeBox.itemType.toFourCCTypeString()
 
                         val label =
-                            "Item #${infeBox.itemId} @ ${infeBox.itemProtectionIndex} = $itemTypeFourCC".
-                                escapeHtmlSpecialChars()
+                            "Item #${infeBox.itemId} @ ${infeBox.itemProtectionIndex} = $itemTypeFourCC".escapeHtmlSpecialChars()
 
                         slices.add(
                             LabeledSlice(
