@@ -242,8 +242,8 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
             slices.add(
                 LabeledSlice(
                     range = startPosition until startPosition + 4,
-                    label = JpegConstants.markerDescription(segmentInfo.marker) + SPACE +
-                        "[${segmentInfo.length}" + SPACE + "bytes]",
+                    label = JpegConstants.markerDescription(segmentInfo.marker).escapeHtmlSpecialChars()
+                        + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
                     emphasisOnFirstBytes = 2
                 )
             )
