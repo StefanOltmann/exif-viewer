@@ -31,7 +31,7 @@ kotlin {
         val wasmJsMain by getting
 
         commonMain.dependencies {
-            api("com.ashampoo:kim:0.16.1")
+            api("com.ashampoo:kim:0.16.2")
         }
 
         commonTest.dependencies {
@@ -43,7 +43,7 @@ kotlin {
         }
 
         jvmTest.dependencies {
-            implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.3.1")
+            implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.3.2")
         }
     }
 }
