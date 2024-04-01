@@ -624,7 +624,8 @@ private fun createTiffSlices(
                         LabeledSlice(
                             range = adjValueOffset until adjValueOffset + 2,
                             label = "GeoTiff" + SPACE + "KeyDirectoryVersion",
-                            separatorLineType = SeparatorLineType.NONE
+                            separatorLineType = SeparatorLineType.NONE,
+                            highlightId = highlightId
                         )
                     )
 
@@ -632,7 +633,8 @@ private fun createTiffSlices(
                         LabeledSlice(
                             range = adjValueOffset + 2 until adjValueOffset + 4,
                             label = "GeoTiff" + SPACE + "KeyRevision",
-                            separatorLineType = SeparatorLineType.NONE
+                            separatorLineType = SeparatorLineType.NONE,
+                            highlightId = highlightId
                         )
                     )
 
@@ -640,7 +642,8 @@ private fun createTiffSlices(
                         LabeledSlice(
                             range = adjValueOffset + 4 until adjValueOffset + 6,
                             label = "GeoTiff" + SPACE + "MinorRevision",
-                            separatorLineType = SeparatorLineType.NONE
+                            separatorLineType = SeparatorLineType.NONE,
+                            highlightId = highlightId
                         )
                     )
 
@@ -648,7 +651,8 @@ private fun createTiffSlices(
                         LabeledSlice(
                             range = adjValueOffset + 6 until adjValueOffset + 8,
                             label = "GeoTiff" + SPACE + "NumberOfKeys",
-                            separatorLineType = SeparatorLineType.NONE
+                            separatorLineType = SeparatorLineType.NONE,
+                            highlightId = highlightId
                         )
                     )
 
@@ -657,7 +661,8 @@ private fun createTiffSlices(
                         LabeledSlice(
                             range = adjValueOffset + 8 until adjValueOffset + field.valueBytes.size,
                             label = "GeoTiff" + SPACE + "values",
-                            separatorLineType = SeparatorLineType.NONE
+                            separatorLineType = SeparatorLineType.NONE,
+                            highlightId = highlightId
                         )
                     )
 
