@@ -57,6 +57,9 @@ private val xmpBox =
 private val textBox =
     document.getElementById("text-box") as HTMLDivElement
 
+private val geoTiffBox =
+    document.getElementById("geotiff-box") as HTMLDivElement
+
 private val hexBox =
     document.getElementById("hex-box") as HTMLDivElement
 
@@ -74,6 +77,9 @@ private val xmpElement =
 
 private val textElement =
     document.getElementById("text") as Element
+
+private val geotiffElement =
+    document.getElementById("geotiff") as Element
 
 private val hexElement =
     document.getElementById("hex") as Element
@@ -180,6 +186,7 @@ private fun processFile(uint8Array: Uint8Array) {
                 iptcBoxVisible = false,
                 xmpBoxVisible = false,
                 textBoxVisible = false,
+                geotiffBoxVisible = false,
                 hexBoxVisible = false
             )
 
@@ -263,6 +270,8 @@ private fun processFile(uint8Array: Uint8Array) {
             }
         }
 
+        updateHtml(geotiffElement, metadata.toGeoTiffHtmlString())
+
         /*
          * Set all boxes visible that have meaningful content.
          */
@@ -272,6 +281,7 @@ private fun processFile(uint8Array: Uint8Array) {
             iptcBoxVisible = metadata.iptc != null,
             xmpBoxVisible = metadata.xmp != null,
             textBoxVisible = displayTextChunk,
+            geotiffBoxVisible = metadata.exif?.geoTiffDirectory != null,
             hexBoxVisible = true
         )
 
@@ -286,7 +296,7 @@ private fun processFile(uint8Array: Uint8Array) {
          * Make all boxes visible even if there is an error or
          * the error message would not be shown to the user.
          */
-        makeAllBoxesVisible()
+        makeAllRegularBoxesVisible()
     }
 }
 
@@ -403,6 +413,7 @@ private fun setBoxVisibility(
     iptcBoxVisible: Boolean,
     xmpBoxVisible: Boolean,
     textBoxVisible: Boolean,
+    geotiffBoxVisible: Boolean,
     hexBoxVisible: Boolean
 ) {
 
@@ -411,19 +422,21 @@ private fun setBoxVisibility(
     iptcBox.style.display = cssDisplayValue(iptcBoxVisible)
     xmpBox.style.display = cssDisplayValue(xmpBoxVisible)
     textBox.style.display = cssDisplayValue(textBoxVisible)
+    geoTiffBox.style.display = cssDisplayValue(geotiffBoxVisible)
     hexBox.style.display = cssDisplayValue(hexBoxVisible)
 }
 
 private fun cssDisplayValue(shouldDisplay: Boolean) =
     if (shouldDisplay) "block" else "none"
 
-private fun makeAllBoxesVisible() =
+private fun makeAllRegularBoxesVisible() =
     setBoxVisibility(
         thumbnailBoxVisible = true,
         exifBoxVisible = true,
         iptcBoxVisible = true,
         xmpBoxVisible = true,
         textBoxVisible = false,
+        geotiffBoxVisible = false,
         hexBoxVisible = true
     )
 

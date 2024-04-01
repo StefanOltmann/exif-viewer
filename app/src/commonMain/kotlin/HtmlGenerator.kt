@@ -177,6 +177,46 @@ fun ImageMetadata.toXmpHtmlString(): String =
         )
     }
 
+fun ImageMetadata.toGeoTiffHtmlString(): String =
+    buildString {
+
+        val geoTiffDirectory = exif?.geoTiffDirectory
+
+        if (geoTiffDirectory == null) {
+            append("No GeoTiff data.")
+            return@buildString
+        }
+
+        append("<table>")
+
+        append("<tr>")
+        append("<th>Name</th>")
+        append("<th>Value</th>")
+        append("</tr>")
+
+        append("<tr>")
+        append("<td>Version</td>")
+        append("<td>${geoTiffDirectory.geoTiffVersionString}")
+        append("</tr>")
+
+        append("<tr>")
+        append("<td>Model type</td>")
+        append("<td>${geoTiffDirectory.modelType?.displayName ?: "-/-"}")
+        append("</tr>")
+
+        append("<tr>")
+        append("<td>Raster type</td>")
+        append("<td>${geoTiffDirectory.rasterType?.displayName ?: "-/-"}")
+        append("</tr>")
+
+        append("<tr>")
+        append("<td>Geographic type</td>")
+        append("<td>${geoTiffDirectory.geographicType?.displayName ?: "-/-"}")
+        append("</tr>")
+
+        append("</table>")
+    }
+
 fun generateHexHtml(bytes: ByteArray): String {
 
     val format = ImageFormat.detect(bytes) ?: return "Image format was not recognized."
