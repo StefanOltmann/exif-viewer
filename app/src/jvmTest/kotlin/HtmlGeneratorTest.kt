@@ -100,6 +100,30 @@ class HtmlGeneratorTest {
     }
 
     @Test
+    fun testToGeoTiffHtmlString() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_8.tif").readBytes()
+
+        val metadata = Kim.readMetadata(imageBytes)
+
+        assertNotNull(metadata)
+
+        val actualHtml = metadata.toGeoTiffHtmlString()
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_8_geotiff.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_8_geotiff.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_8_geotiff.html differs.")
+        }
+    }
+
+    @Test
     fun testGenerateHexHtmlJpeg() {
 
         val imageBytes = Path("src/jvmTest/resources/photo_1.jpg").readBytes()
