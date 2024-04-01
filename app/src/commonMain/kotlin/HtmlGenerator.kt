@@ -38,6 +38,7 @@ import com.ashampoo.kim.format.png.PngImageParser
 import com.ashampoo.kim.format.tiff.TiffDirectory
 import com.ashampoo.kim.format.tiff.TiffReader
 import com.ashampoo.kim.format.tiff.constant.ExifTag
+import com.ashampoo.kim.format.tiff.constant.GeoTiffTag
 import com.ashampoo.kim.format.tiff.constant.TiffConstants
 import com.ashampoo.kim.format.webp.WebPChunkType
 import com.ashampoo.kim.format.webp.WebPConstants
@@ -612,19 +613,68 @@ private fun createTiffSlices(
                 if (skipMakerNoteValue)
                     return@let
 
+                val isGeoTiffDirectory =
+                    GeoTiffTag.EXIF_TAG_GEO_KEY_DIRECTORY_TAG == field.tagInfo
+
                 val adjValueOffset = valueOffset + startPosition
 
-                slices.add(
-                    LabeledSlice(
-                        range = adjValueOffset until adjValueOffset + field.valueBytes.size,
-                        label = "${field.tagInfo?.name ?: field.tagFormatted} value".escapeSpaces(),
-                        /* Skip very long value fields like Maker Note or XMP (in TIFF) */
-                        snipAfterLineCount = 8,
-                        separatorLineType = SeparatorLineType.NONE,
-                        highlightId = highlightId,
-                        highlightLabel = false
+                if (isGeoTiffDirectory) {
+
+                    slices.add(
+                        LabeledSlice(
+                            range = adjValueOffset until adjValueOffset + 2,
+                            label = "GeoTiff" + SPACE + "KeyDirectoryVersion",
+                            separatorLineType = SeparatorLineType.NONE
+                        )
                     )
-                )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = adjValueOffset + 2 until adjValueOffset + 4,
+                            label = "GeoTiff" + SPACE + "KeyRevision",
+                            separatorLineType = SeparatorLineType.NONE
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = adjValueOffset + 4 until adjValueOffset + 6,
+                            label = "GeoTiff" + SPACE + "MinorRevision",
+                            separatorLineType = SeparatorLineType.NONE
+                        )
+                    )
+
+                    slices.add(
+                        LabeledSlice(
+                            range = adjValueOffset + 6 until adjValueOffset + 8,
+                            label = "GeoTiff" + SPACE + "NumberOfKeys",
+                            separatorLineType = SeparatorLineType.NONE
+                        )
+                    )
+
+                    // TODO Explain the values
+                    slices.add(
+                        LabeledSlice(
+                            range = adjValueOffset + 8 until adjValueOffset + field.valueBytes.size,
+                            label = "GeoTiff" + SPACE + "values",
+                            separatorLineType = SeparatorLineType.NONE
+                        )
+                    )
+
+                } else {
+
+                    slices.add(
+                        LabeledSlice(
+                            range = adjValueOffset until adjValueOffset + field.valueBytes.size,
+                            label = "${field.tagInfo?.name ?: field.tagFormatted} value".escapeSpaces(),
+                            /* Skip very long value fields like Maker Note or XMP (in TIFF) */
+                            snipAfterLineCount = 8,
+                            separatorLineType = SeparatorLineType.NONE,
+                            highlightId = highlightId,
+                            highlightLabel = false
+                        )
+                    )
+                }
             }
         }
 
