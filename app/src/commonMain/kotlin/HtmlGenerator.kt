@@ -547,7 +547,7 @@ private fun createTiffSlices(
 
         val directoryOffset = directory.offset + startPosition
 
-        directory.thumbnailImageDataElement?.let {
+        directory.getJpegImageDataElement()?.let {
 
             val offset = it.offset + startPosition
 
@@ -560,17 +560,20 @@ private fun createTiffSlices(
             )
         }
 
-        directory.tiffImageDataElement?.let {
+        directory.getStripImageDataElements()?.let {
 
-            val offset = it.offset + startPosition
+            for (element in it) {
 
-            slices.add(
-                LabeledSlice(
-                    range = offset until offset + it.length,
-                    label = "[$directoryDescription strip bytes: ${it.length} bytes]".escapeSpaces(),
-                    snipAfterLineCount = 1
+                val offset = element.offset + startPosition
+
+                slices.add(
+                    LabeledSlice(
+                        range = offset until offset + element.length,
+                        label = "[$directoryDescription strip bytes: ${element.length} bytes]".escapeSpaces(),
+                        snipAfterLineCount = 1
+                    )
                 )
-            )
+            }
         }
 
         slices.add(
