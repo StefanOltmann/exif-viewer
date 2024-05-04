@@ -18,10 +18,7 @@
  */
 
 import com.ashampoo.kim.common.MetadataType
-import com.ashampoo.kim.common.slice
 import com.ashampoo.kim.common.toFourCCTypeString
-import com.ashampoo.kim.common.toHex
-import com.ashampoo.kim.common.toUInt8
 import com.ashampoo.kim.format.ImageMetadata
 import com.ashampoo.kim.format.bmff.BoxReader
 import com.ashampoo.kim.format.bmff.BoxType
@@ -1163,6 +1160,7 @@ private fun completeSlices(
     return completedSlices
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 private fun generateHtmlFromSlices(
     bytes: ByteArray,
     slices: List<LabeledSlice>
@@ -1204,9 +1202,9 @@ private fun generateHtmlFromSlices(
 
             /* Emphasis on the marker bytes. */
             if (firstLineOfSegment && bytesOfLine.size <= slice.emphasisOnFirstBytes)
-                append("<b>" + byte.toHex().uppercase() + "</b>$SPACE")
+                append("<b>" + byte.toHexString(HexFormat.UpperCase) + "</b>$SPACE")
             else
-                append(byte.toHex().uppercase() + SPACE)
+                append(byte.toHexString(HexFormat.UpperCase) + SPACE)
 
             /* Extra spacing in the middle to have two pairs of 8 bytes. */
             if (bytesOfLine.size == BYTES_PER_ROW / 2)
@@ -1330,6 +1328,13 @@ fun String.escapeHtmlSpecialChars(): String =
 
 private fun String.escapeSpaces(): String =
     this.replace(" ", SPACE)
+
+private fun Byte.toUInt8(): Int = 0xFF and toInt()
+
+fun ByteArray.slice(startIndex: Int, count: Int): ByteArray {
+    val endIndex = (startIndex + count).coerceAtMost(size)
+    return sliceArray(startIndex until endIndex)
+}
 
 @Suppress("MagicNumber")
 private fun decodeBytesForHexView(bytes: List<Byte>): String =
