@@ -3,4 +3,5 @@
 .DS_Store
 .gradle
 .idea
+/.kotlin/
 local.properties
