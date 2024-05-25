@@ -18,9 +18,6 @@ kotlin {
         }
 
         binaries.executable()
-
-        /* Use Binaryen optimization to make it smaller & faster */
-        applyBinaryen()
     }
 
     /* Only to execute tests. */
