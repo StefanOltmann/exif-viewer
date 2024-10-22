@@ -1,8 +1,8 @@
 [versions]
 junit = "4.13.2"
-kotlin = "2.0.20"
-kotlinx-io = "0.5.3"
-ashampoo-kim = "0.18.5"
+kotlin = "2.0.21"
+kotlinx-io = "0.5.4"
+ashampoo-kim = "0.19"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
