@@ -36,7 +36,10 @@ kotlin {
         }
 
         wasmJsMain.dependencies {
+
             implementation(npm("pako", "2.1.0"))
+
+            implementation("org.jetbrains.kotlinx:kotlinx-browser:0.3")
         }
 
         jvmTest.dependencies {
