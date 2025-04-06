@@ -26,6 +26,8 @@ import com.ashampoo.kim.format.bmff.box.ItemInfoEntryBox
 import com.ashampoo.kim.format.bmff.box.ItemInformationBox
 import com.ashampoo.kim.format.bmff.box.ItemLocationBox
 import com.ashampoo.kim.format.bmff.box.MetaBox
+import com.ashampoo.kim.format.gif.GifChunkType
+import com.ashampoo.kim.format.gif.GifImageParser
 import com.ashampoo.kim.format.jpeg.JpegConstants
 import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
 import com.ashampoo.kim.format.jxl.box.ExifBox
@@ -242,6 +244,9 @@ fun generateHexHtml(bytes: ByteArray): String {
         ImageFormat.AVIF,
         ImageFormat.JXL ->
             generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
+
+        ImageFormat.GIF ->
+            generateHtmlFromSlices(bytes, createGifSlices(bytes))
 
         else -> "HEX view for $format is not (yet) supported."
     }
@@ -1098,6 +1103,39 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                 )
             )
         }
+    }
+
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    return slices
+}
+
+private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
+
+    val chunks = GifImageParser.readChunks(
+        byteReader = ByteArrayByteReader(bytes),
+        chunkTypeFilter = null
+    )
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    var startPosition = 0
+
+    for (chunk in chunks) {
+
+        val endPosition = startPosition + chunk.bytes.size
+
+        slices.add(
+            LabeledSlice(
+                range = startPosition until endPosition,
+                label = chunk.type.name,
+                separatorLineType = SeparatorLineType.BOLD,
+                snipAfterLineCount = if (chunk.type == GifChunkType.APPLICATION_EXTENSION) 5 else 1
+            )
+        )
+
+        startPosition = endPosition
     }
 
     /* For safety sort in offset order. */
