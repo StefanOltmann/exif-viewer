@@ -48,7 +48,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew allTests wasmJsBrowserDistribution
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: 'app/build/dist/wasmJs/productionExecutable'
       - name: Deploy to GitHub Pages
