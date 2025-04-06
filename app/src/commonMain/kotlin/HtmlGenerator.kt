@@ -1132,17 +1132,90 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = 0 until 3,
-                        label = "GIF signature",
+                        range = 0 .. 2,
+                        label = "GIF Signature",
                         separatorLineType = SeparatorLineType.NONE
                     )
                 )
 
                 slices.add(
                     LabeledSlice(
-                        range = 3 until 6,
-                        label = "GIF version",
+                        range = 3 .. 5,
+                        label = "GIF Version",
                         separatorLineType = SeparatorLineType.NONE
+                    )
+                )
+            }
+
+            GifChunkType.LOGICAL_SCREEN_DESCRIPTOR -> {
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition .. startPosition + 1,
+                        label = "Canvas Width",
+                        separatorLineType = SeparatorLineType.BOLD
+                    )
+                )
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition + 2 .. startPosition + 3,
+                        label = "Canvas Height",
+                        separatorLineType = SeparatorLineType.NONE
+                    )
+                )
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition + 4 .. startPosition + 4,
+                        label = "Packed fields",
+                        separatorLineType = SeparatorLineType.NONE
+                    )
+                )
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition + 5 .. startPosition + 5,
+                        label = "Background Color Index",
+                        separatorLineType = SeparatorLineType.NONE
+                    )
+                )
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition + 6 .. startPosition + 6,
+                        label = "Pixel Aspect Ratio",
+                        separatorLineType = SeparatorLineType.NONE
+                    )
+                )
+            }
+
+            GifChunkType.APPLICATION_EXTENSION -> {
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition .. startPosition,
+                        label = "Extension introducer",
+                        separatorLineType = SeparatorLineType.BOLD,
+                        snipAfterLineCount = 1
+                    )
+                )
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition + 1 .. startPosition + 1,
+                        label = "Application extension",
+                        separatorLineType = SeparatorLineType.NONE,
+                        snipAfterLineCount = 1
+                    )
+                )
+
+                slices.add(
+                    LabeledSlice(
+                        range = startPosition + 2 until endPosition,
+                        label = "data",
+                        separatorLineType = SeparatorLineType.THIN,
+                        snipAfterLineCount = 5
                     )
                 )
             }
@@ -1154,7 +1227,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
                         range = startPosition until endPosition,
                         label = chunk.type.name,
                         separatorLineType = SeparatorLineType.BOLD,
-                        snipAfterLineCount = if (chunk.type == GifChunkType.APPLICATION_EXTENSION) 5 else 1
+                        snipAfterLineCount = 1
                     )
                 )
             }
