@@ -282,4 +282,24 @@ class HtmlGeneratorTest {
             fail("HTML photo_8_hex.html differs.")
         }
     }
+
+    @Test
+    fun testGenerateHexHtmlGif() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_9.gif").readBytes()
+
+        val actualHtml = generateHexHtml(imageBytes)
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_9_hex.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_9_hex.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_9_hex.html differs.")
+        }
+    }
 }
