@@ -6,7 +6,7 @@ kotlin {
 
     wasmJs {
 
-        moduleName = "app"
+        outputModuleName = "app"
 
         browser {
             commonWebpackConfig {
