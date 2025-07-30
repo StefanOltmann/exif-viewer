@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17.0.10+7'
+          java-version: '17'
       - name: Gradle Cache
         uses: actions/cache@v3
         with:
@@ -43,7 +43,7 @@ jobs:
       - name: Build & Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Execute allTests to prevent accidental release of broken app
+        # Execute allTests to prevent accidental release of a broken app
         run: |
           chmod +x ./gradlew
           ./gradlew allTests wasmJsBrowserDistribution
