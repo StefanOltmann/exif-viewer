@@ -1,13 +1,10 @@
 [versions]
 junit = "4.13.2"
-kotlin = "2.1.21"
-kotlinx-io = "0.7.0"
-ashampoo-kim = "0.25"
+kotlin = "2.2.0"
+kotlinx-io = "0.8.0"
+ashampoo-kim = "0.26"
 
 [libraries]
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-io = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
 ashampoo-kim = { group = "com.ashampoo", name = "kim", version.ref = "ashampoo-kim" }
 

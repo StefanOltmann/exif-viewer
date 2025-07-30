@@ -1,6 +1,6 @@
 # EXIF Viewer
 
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.21-blue.svg?logo=kotlin)](httpw://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.2.0-blue.svg?logo=kotlin)](httpw://kotlinlang.org)
 ![WASM](https://img.shields.io/badge/-WASM-gray.svg?style=flat)
 
 <a href="https://ko-fi.com/StefanOltmann">
@@ -8,7 +8,7 @@
 </a>
 
 Web-based EXIF viewer built to view photo EXIF data details from
-a range of photo format's metadata including JPEG, PNG and TIFF image files.
+a range of photo format's metadata including JPEG, PNG, and TIFF image files.
 
 Made with Kotlin for WebAssembly & powered by [Ashampoo Kim](https://github.com/ashampoo/kim).
 
