@@ -1,6 +1,6 @@
 [versions]
 junit = "4.13.2"
-kotlin = "2.2.10"
+kotlin = "2.2.20"
 kotlinx-io = "0.8.0"
 ashampoo-kim = "0.26.2"
 
