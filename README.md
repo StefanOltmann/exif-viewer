@@ -1,8 +1,8 @@
 # EXIF Viewer
 
-[![Kotlin](https://img.shields.io/badge/kotlin-2.2.0-blue.svg?logo=kotlin)](httpw://kotlinlang.org)
+![Kotlin](https://img.shields.io/badge/kotlin-2.2.20-blue.svg?logo=kotlin)
 ![WASM](https://img.shields.io/badge/-WASM-gray.svg?style=flat)
-[![Sponsors](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub)](https://github.com/sponsors/StefanOltmann)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-gray?&logo=GitHub-Sponsors&logoColor=EA4AAA)](https://github.com/sponsors/StefanOltmann)
 
 Web-based EXIF viewer built to view photo EXIF data details from
 a range of photo format's metadata including JPEG, PNG, and TIFF image files.
