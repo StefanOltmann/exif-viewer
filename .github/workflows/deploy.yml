@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy to web
 
 on:
   push:
@@ -47,10 +47,12 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew allTests wasmJsBrowserDistribution
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy over FTP
+        uses: modern-dev/ftp-mirror@v2
         with:
-          path: 'app/build/dist/wasmJs/productionExecutable'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          server: ${{ secrets.FTP_SERVER }}
+          user: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local_dir: "app/build/dist/wasmJs/productionExecutable"
+          remote_dir: "/httpdocs/exif-viewer/"
+          delete: true
