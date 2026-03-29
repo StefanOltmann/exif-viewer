@@ -17,15 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.ashampoo.kim.Kim
-import com.ashampoo.kim.format.png.PngChunkType
-import com.ashampoo.kim.format.png.PngConstants
-import com.ashampoo.kim.format.png.PngImageParser
-import com.ashampoo.kim.format.png.chunk.PngTextChunk
-import com.ashampoo.kim.format.tiff.constant.TiffTag
-import com.ashampoo.kim.input.ByteArrayByteReader
-import com.ashampoo.kim.model.ImageFormat
-import com.ashampoo.kim.model.TiffOrientation
+import de.stefan_oltmann.kim.Kim
+import de.stefan_oltmann.kim.format.png.PngChunkType
+import de.stefan_oltmann.kim.format.png.PngConstants
+import de.stefan_oltmann.kim.format.png.PngImageParser
+import de.stefan_oltmann.kim.format.png.chunk.PngTextChunk
+import de.stefan_oltmann.kim.format.tiff.constant.TiffTag
+import de.stefan_oltmann.kim.input.ByteArrayByteReader
+import de.stefan_oltmann.kim.model.ImageFormat
+import de.stefan_oltmann.kim.model.TiffOrientation
 import kotlinx.browser.document
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Uint8Array

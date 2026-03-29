@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.ashampoo.kim.Kim
+import de.stefan_oltmann.kim.Kim
 import kotlin.io.path.Path
 import kotlin.io.path.readBytes
 import kotlin.io.path.writeText

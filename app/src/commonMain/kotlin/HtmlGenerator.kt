@@ -17,33 +17,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.ashampoo.kim.common.MetadataType
-import com.ashampoo.kim.common.toFourCCTypeString
-import com.ashampoo.kim.format.ImageMetadata
-import com.ashampoo.kim.format.bmff.BoxReader
-import com.ashampoo.kim.format.bmff.BoxType
-import com.ashampoo.kim.format.bmff.box.ItemInfoEntryBox
-import com.ashampoo.kim.format.bmff.box.ItemInformationBox
-import com.ashampoo.kim.format.bmff.box.ItemLocationBox
-import com.ashampoo.kim.format.bmff.box.MetaBox
-import com.ashampoo.kim.format.gif.GifChunkType
-import com.ashampoo.kim.format.gif.GifImageParser
-import com.ashampoo.kim.format.jpeg.JpegConstants
-import com.ashampoo.kim.format.jpeg.JpegSegmentAnalyzer
-import com.ashampoo.kim.format.jxl.box.ExifBox
-import com.ashampoo.kim.format.png.PngChunkType
-import com.ashampoo.kim.format.png.PngConstants
-import com.ashampoo.kim.format.png.PngImageParser
-import com.ashampoo.kim.format.tiff.TiffDirectory
-import com.ashampoo.kim.format.tiff.TiffReader
-import com.ashampoo.kim.format.tiff.constant.ExifTag
-import com.ashampoo.kim.format.tiff.constant.GeoTiffTag
-import com.ashampoo.kim.format.tiff.constant.TiffConstants
-import com.ashampoo.kim.format.webp.WebPChunkType
-import com.ashampoo.kim.format.webp.WebPConstants
-import com.ashampoo.kim.format.webp.WebPImageParser
-import com.ashampoo.kim.input.ByteArrayByteReader
-import com.ashampoo.kim.model.ImageFormat
+import de.stefan_oltmann.kim.common.MetadataType
+import de.stefan_oltmann.kim.common.toFourCCTypeString
+import de.stefan_oltmann.kim.format.ImageMetadata
+import de.stefan_oltmann.kim.format.bmff.BoxReader
+import de.stefan_oltmann.kim.format.bmff.BoxType
+import de.stefan_oltmann.kim.format.bmff.box.ItemInfoEntryBox
+import de.stefan_oltmann.kim.format.bmff.box.ItemInformationBox
+import de.stefan_oltmann.kim.format.bmff.box.ItemLocationBox
+import de.stefan_oltmann.kim.format.bmff.box.MetaBox
+import de.stefan_oltmann.kim.format.gif.GifChunkType
+import de.stefan_oltmann.kim.format.gif.GifImageParser
+import de.stefan_oltmann.kim.format.jpeg.JpegConstants
+import de.stefan_oltmann.kim.format.jpeg.JpegSegmentAnalyzer
+import de.stefan_oltmann.kim.format.jxl.box.ExifBox
+import de.stefan_oltmann.kim.format.png.PngChunkType
+import de.stefan_oltmann.kim.format.png.PngConstants
+import de.stefan_oltmann.kim.format.png.PngImageParser
+import de.stefan_oltmann.kim.format.tiff.TiffDirectory
+import de.stefan_oltmann.kim.format.tiff.TiffReader
+import de.stefan_oltmann.kim.format.tiff.constant.ExifTag
+import de.stefan_oltmann.kim.format.tiff.constant.GeoTiffTag
+import de.stefan_oltmann.kim.format.tiff.constant.TiffConstants
+import de.stefan_oltmann.kim.format.webp.WebPChunkType
+import de.stefan_oltmann.kim.format.webp.WebPConstants
+import de.stefan_oltmann.kim.format.webp.WebPImageParser
+import de.stefan_oltmann.kim.input.ByteArrayByteReader
+import de.stefan_oltmann.kim.model.ImageFormat
 
 /* Show byte positions up to 99 MB. Hopefully that's enough. */
 private const val POS_COUNTER_LENGTH = 8

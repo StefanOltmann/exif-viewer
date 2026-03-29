@@ -1,11 +1,11 @@
 [versions]
-kotlin = "2.3.0"
-kotlinx-io = "0.8.0"
-ashampoo-kim = "0.26.2"
+kotlin = "2.3.20"
+kotlinx-io = "0.9.0"
+kim = "0.27.0"
 
 [libraries]
 kotlinx-io = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
-ashampoo-kim = { group = "com.ashampoo", name = "kim", version.ref = "ashampoo-kim" }
+kim = { group = "de.stefan-oltmann", name = "kim", version.ref = "kim" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
