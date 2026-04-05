@@ -854,9 +854,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                         )
                     )
 
-                    var dataStartOffset: Int
-
-                    if (subBox.version < 2) {
+                    val dataStartOffset: Int = if (subBox.version < 2) {
 
                         slices.add(
                             LabeledSlice(
@@ -867,7 +865,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                             )
                         )
 
-                        dataStartOffset = subBox.offset.toInt() + 16
+                        subBox.offset.toInt() + 16
 
                     } else {
 
@@ -880,7 +878,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
                             )
                         )
 
-                        dataStartOffset = subBox.offset.toInt() + 18
+                        subBox.offset.toInt() + 18
                     }
 
                     // TODO Decode the rest of the box

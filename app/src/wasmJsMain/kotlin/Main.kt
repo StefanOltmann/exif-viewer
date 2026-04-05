@@ -142,6 +142,7 @@ private fun registerFileInputEvents() {
     }
 }
 
+@OptIn(ExperimentalWasmJsInterop::class)
 private fun handleFile(file: File) {
 
     val fileReader = FileReader()

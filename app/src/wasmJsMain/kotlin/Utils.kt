@@ -34,6 +34,7 @@ fun ByteArray.toUint8Array(): Uint8Array {
     return result
 }
 
+@OptIn(ExperimentalWasmJsInterop::class)
 fun ByteArray.toBlob(mimeType: String): Blob {
 
     val uint8Array: Uint8Array = toUint8Array()
@@ -44,6 +45,7 @@ fun ByteArray.toBlob(mimeType: String): Blob {
     )
 }
 
+@OptIn(ExperimentalWasmJsInterop::class)
 fun <T : JsAny?> jsArrayOf(vararg elements: T): JsArray<T> {
 
     val array = JsArray<T>()

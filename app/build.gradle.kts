@@ -4,6 +4,20 @@ plugins {
 
 kotlin {
 
+    compilerOptions {
+
+        /* Make the code safer */
+        progressiveMode = true
+        extraWarnings = true
+    }
+
+    /* Only to execute tests. */
+    jvm {
+        compilerOptions {
+            allWarningsAsErrors = true
+        }
+    }
+
     wasmJs {
 
         outputModuleName = "app"
@@ -16,9 +30,6 @@ kotlin {
 
         binaries.executable()
     }
-
-    /* Only to execute tests. */
-    jvm()
 
     sourceSets {
 
