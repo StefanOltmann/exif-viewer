@@ -9,14 +9,11 @@ kotlin {
         /* Make the code safer */
         progressiveMode = true
         extraWarnings = true
+        allWarningsAsErrors = true
     }
 
     /* Only to execute tests. */
-    jvm {
-        compilerOptions {
-            allWarningsAsErrors = true
-        }
-    }
+    jvm()
 
     wasmJs {
 
