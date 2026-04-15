@@ -19,7 +19,7 @@
 
 import de.stefan_oltmann.kim.common.MetadataType
 import de.stefan_oltmann.kim.common.toFourCCTypeString
-import de.stefan_oltmann.kim.format.ImageMetadata
+import de.stefan_oltmann.kim.format.MediaMetadata
 import de.stefan_oltmann.kim.format.bmff.BoxReader
 import de.stefan_oltmann.kim.format.bmff.BoxType
 import de.stefan_oltmann.kim.format.bmff.box.ItemInfoEntryBox
@@ -43,7 +43,7 @@ import de.stefan_oltmann.kim.format.webp.WebPChunkType
 import de.stefan_oltmann.kim.format.webp.WebPConstants
 import de.stefan_oltmann.kim.format.webp.WebPImageParser
 import de.stefan_oltmann.kim.input.ByteArrayByteReader
-import de.stefan_oltmann.kim.model.ImageFormat
+import de.stefan_oltmann.kim.model.MediaFormat
 
 /* Show byte positions up to 99 MB. Hopefully that's enough. */
 private const val POS_COUNTER_LENGTH = 8
@@ -66,7 +66,7 @@ private const val BOLD_HR_HTML =
     "<hr style=\"height:2px;margin:1px;padding:0;border-width:0;" +
         "color:#dddddd;background-color:#dddddd\">"
 
-fun ImageMetadata.toExifHtmlString(): String =
+fun MediaMetadata.toExifHtmlString(): String =
     buildString {
 
         if (exif == null) {
@@ -119,7 +119,7 @@ fun ImageMetadata.toExifHtmlString(): String =
         append("</table>")
     }
 
-fun ImageMetadata.toIptcHtmlString(): String =
+fun MediaMetadata.toIptcHtmlString(): String =
     buildString {
 
         if (iptc == null) {
@@ -162,7 +162,7 @@ fun ImageMetadata.toIptcHtmlString(): String =
         append("</table>")
     }
 
-fun ImageMetadata.toXmpHtmlString(): String =
+fun MediaMetadata.toXmpHtmlString(): String =
     buildString {
 
         if (xmp == null) {
@@ -177,7 +177,7 @@ fun ImageMetadata.toXmpHtmlString(): String =
         )
     }
 
-fun ImageMetadata.toGeoTiffHtmlString(): String =
+fun MediaMetadata.toGeoTiffHtmlString(): String =
     buildString {
 
         val geoTiffDirectory = exif?.geoTiffDirectory
@@ -219,33 +219,33 @@ fun ImageMetadata.toGeoTiffHtmlString(): String =
 
 fun generateHexHtml(bytes: ByteArray): String {
 
-    val format = ImageFormat.detect(bytes) ?: return "Image format was not recognized."
+    val format = MediaFormat.detect(bytes) ?: return "Image format was not recognized."
 
     return when (format) {
 
-        ImageFormat.JPEG ->
+        MediaFormat.JPEG ->
             generateHtmlFromSlices(bytes, createJpegSlices(bytes))
 
-        ImageFormat.TIFF,
-        ImageFormat.CR2,
-        ImageFormat.NEF,
-        ImageFormat.ARW,
-        ImageFormat.RW2,
-        ImageFormat.ORF ->
+        MediaFormat.TIFF,
+        MediaFormat.CR2,
+        MediaFormat.NEF,
+        MediaFormat.ARW,
+        MediaFormat.RW2,
+        MediaFormat.ORF ->
             generateHtmlFromSlices(bytes, createTiffSlices(bytes, exifBytes = false))
 
-        ImageFormat.PNG ->
+        MediaFormat.PNG ->
             generateHtmlFromSlices(bytes, createPngSlices(bytes))
 
-        ImageFormat.WEBP ->
+        MediaFormat.WEBP ->
             generateHtmlFromSlices(bytes, createWebPSlices(bytes))
 
-        ImageFormat.HEIC,
-        ImageFormat.AVIF,
-        ImageFormat.JXL ->
+        MediaFormat.HEIC,
+        MediaFormat.AVIF,
+        MediaFormat.JXL ->
             generateHtmlFromSlices(bytes, createBaseMediaFileFormatSlices(bytes))
 
-        ImageFormat.GIF ->
+        MediaFormat.GIF ->
             generateHtmlFromSlices(bytes, createGifSlices(bytes))
 
         else -> "HEX view for $format is not (yet) supported."
@@ -1130,7 +1130,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = 0 .. 2,
+                        range = 0..2,
                         label = "GIF Signature",
                         separatorLineType = SeparatorLineType.NONE
                     )
@@ -1138,7 +1138,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = 3 .. 5,
+                        range = 3..5,
                         label = "GIF Version",
                         separatorLineType = SeparatorLineType.NONE
                     )
@@ -1149,7 +1149,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition .. startPosition + 1,
+                        range = startPosition..startPosition + 1,
                         label = "Canvas Width",
                         separatorLineType = SeparatorLineType.BOLD
                     )
@@ -1157,7 +1157,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition + 2 .. startPosition + 3,
+                        range = startPosition + 2..startPosition + 3,
                         label = "Canvas Height",
                         separatorLineType = SeparatorLineType.NONE
                     )
@@ -1165,7 +1165,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition + 4 .. startPosition + 4,
+                        range = startPosition + 4..startPosition + 4,
                         label = "Packed fields",
                         separatorLineType = SeparatorLineType.NONE
                     )
@@ -1173,7 +1173,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition + 5 .. startPosition + 5,
+                        range = startPosition + 5..startPosition + 5,
                         label = "Background Color Index",
                         separatorLineType = SeparatorLineType.NONE
                     )
@@ -1181,7 +1181,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition + 6 .. startPosition + 6,
+                        range = startPosition + 6..startPosition + 6,
                         label = "Pixel Aspect Ratio",
                         separatorLineType = SeparatorLineType.NONE
                     )
@@ -1192,7 +1192,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition .. startPosition,
+                        range = startPosition..startPosition,
                         label = "Extension introducer",
                         separatorLineType = SeparatorLineType.BOLD,
                         snipAfterLineCount = 1
@@ -1201,7 +1201,7 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 
                 slices.add(
                     LabeledSlice(
-                        range = startPosition + 1 .. startPosition + 1,
+                        range = startPosition + 1..startPosition + 1,
                         label = "Application extension",
                         separatorLineType = SeparatorLineType.NONE,
                         snipAfterLineCount = 1

@@ -24,7 +24,7 @@ import de.stefan_oltmann.kim.format.png.PngImageParser
 import de.stefan_oltmann.kim.format.png.chunk.PngTextChunk
 import de.stefan_oltmann.kim.format.tiff.constant.TiffTag
 import de.stefan_oltmann.kim.input.ByteArrayByteReader
-import de.stefan_oltmann.kim.model.ImageFormat
+import de.stefan_oltmann.kim.model.MediaFormat
 import de.stefan_oltmann.kim.model.TiffOrientation
 import kotlinx.browser.document
 import org.khronos.webgl.ArrayBuffer
@@ -229,7 +229,7 @@ private fun processFile(uint8Array: Uint8Array) {
 
         var displayTextChunk = false
 
-        if (metadata.imageFormat == ImageFormat.PNG) {
+        if (metadata.mediaFormat == MediaFormat.PNG) {
 
             val textChunks = PngImageParser.readChunks(
                 byteReader = ByteArrayByteReader(bytes),
