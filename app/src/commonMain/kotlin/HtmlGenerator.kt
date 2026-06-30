@@ -26,6 +26,7 @@ import de.stefan_oltmann.kim.format.bmff.box.ItemInfoEntryBox
 import de.stefan_oltmann.kim.format.bmff.box.ItemInformationBox
 import de.stefan_oltmann.kim.format.bmff.box.ItemLocationBox
 import de.stefan_oltmann.kim.format.bmff.box.MetaBox
+import de.stefan_oltmann.kim.format.bmff.box.MetaBoxTopLevel
 import de.stefan_oltmann.kim.format.gif.GifChunkType
 import de.stefan_oltmann.kim.format.gif.GifImageParser
 import de.stefan_oltmann.kim.format.jpeg.JpegConstants
@@ -776,7 +777,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
         offsetShift = 0
     )
 
-    val metaBox = boxes.find { it.type == BoxType.META } as? MetaBox
+    val metaBox = boxes.find { it.type == BoxType.META } as? MetaBoxTopLevel
 
     val metadataOffsets = metaBox?.findMetadataOffsets()
 

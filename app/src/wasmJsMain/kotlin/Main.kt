@@ -443,7 +443,7 @@ private fun makeAllRegularBoxesVisible() =
 
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-private fun toggleBoxContent(boxId: String) {
+fun toggleBoxContent(boxId: String) {
 
     val box = document.getElementById(boxId);
 
