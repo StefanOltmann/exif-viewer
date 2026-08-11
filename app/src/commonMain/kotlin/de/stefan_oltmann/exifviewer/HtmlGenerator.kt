@@ -35,6 +35,7 @@ import de.stefan_oltmann.kim.format.gif.GifChunkType
 import de.stefan_oltmann.kim.format.gif.GifImageParser
 import de.stefan_oltmann.kim.format.jpeg.JpegConstants
 import de.stefan_oltmann.kim.format.jpeg.JpegSegmentAnalyzer
+import de.stefan_oltmann.kim.format.jpeg.iptc.IptcMetadata
 import de.stefan_oltmann.kim.format.jxl.box.ExifBox
 import de.stefan_oltmann.kim.format.png.PngChunkType
 import de.stefan_oltmann.kim.format.png.PngConstants
@@ -46,6 +47,7 @@ import de.stefan_oltmann.kim.format.tiff.TiffReader
 import de.stefan_oltmann.kim.format.tiff.constant.ExifTag
 import de.stefan_oltmann.kim.format.tiff.constant.GeoTiffTag
 import de.stefan_oltmann.kim.format.tiff.constant.TiffConstants
+import de.stefan_oltmann.kim.format.tiff.geotiff.GeoTiffDirectory
 import de.stefan_oltmann.kim.format.webp.WebPChunkType
 import de.stefan_oltmann.kim.format.webp.WebPConstants
 import de.stefan_oltmann.kim.format.webp.WebPImageParser
@@ -79,7 +81,19 @@ private const val BOLD_HR_HTML =
     "<hr style=\"height:2px;margin:1px;padding:0;border-width:0;" +
         "color:#dddddd;background-color:#dddddd\">"
 
+internal fun mergeMakerNote(
+    directories: List<TiffDirectory>,
+    makerNoteDirectory: TiffDirectory?
+): List<TiffDirectory> =
+    if (makerNoteDirectory != null)
+        directories + makerNoteDirectory
+    else
+        directories
+
 fun MediaMetadata.toExifHtmlString(): String =
+    buildExifHtmlString(exif)
+
+internal fun buildExifHtmlString(exif: TiffContents?): String =
     buildString {
 
         if (exif == null) {
@@ -96,10 +110,7 @@ fun MediaMetadata.toExifHtmlString(): String =
         append("<th>Value</th>")
         append("</tr>")
 
-        val mergedDirectories = if (exif!!.makerNoteDirectory != null)
-            exif!!.directories + exif!!.makerNoteDirectory!!
-        else
-            exif!!.directories
+        val mergedDirectories = mergeMakerNote(exif.directories, exif.makerNoteDirectory)
 
         for (directory in mergedDirectories) {
 
@@ -133,6 +144,9 @@ fun MediaMetadata.toExifHtmlString(): String =
     }
 
 fun MediaMetadata.toIptcHtmlString(): String =
+    buildIptcHtmlString(iptc)
+
+internal fun buildIptcHtmlString(iptc: IptcMetadata?): String =
     buildString {
 
         if (iptc == null) {
@@ -140,7 +154,7 @@ fun MediaMetadata.toIptcHtmlString(): String =
             return@buildString
         }
 
-        if (iptc?.records?.isEmpty() == true) {
+        if (iptc.records.isEmpty()) {
             append("IPTC present, but has no records.")
             return@buildString
         }
@@ -153,7 +167,7 @@ fun MediaMetadata.toIptcHtmlString(): String =
         append("<th>Value</th>")
         append("</tr>")
 
-        for (record in iptc!!.records) {
+        for (record in iptc.records) {
 
             append("<tr>")
 
@@ -176,6 +190,9 @@ fun MediaMetadata.toIptcHtmlString(): String =
     }
 
 fun MediaMetadata.toXmpHtmlString(): String =
+    buildXmpHtmlString(xmp)
+
+internal fun buildXmpHtmlString(xmp: String?): String =
     buildString {
 
         if (xmp == null) {
@@ -184,16 +201,16 @@ fun MediaMetadata.toXmpHtmlString(): String =
         }
 
         append(
-            xmp.toString()
-                .escapeHtmlSpecialChars()
+            xmp.escapeHtmlSpecialChars()
                 .replace("\n", "<br>")
         )
     }
 
 fun MediaMetadata.toGeoTiffHtmlString(): String =
-    buildString {
+    buildGeoTiffHtmlString(exif?.geoTiffDirectory)
 
-        val geoTiffDirectory = exif?.geoTiffDirectory
+internal fun buildGeoTiffHtmlString(geoTiffDirectory: GeoTiffDirectory?): String =
+    buildString {
 
         if (geoTiffDirectory == null) {
             append("No GeoTiff data.")
@@ -523,7 +540,7 @@ private fun createWebPSlices(bytes: ByteArray): List<LabeledSlice> {
     return slices
 }
 
-private fun createTiffSlices(
+internal fun createTiffSlices(
     bytes: ByteArray,
     startPosition: Int = 0,
     endPosition: Int = bytes.size,
@@ -548,10 +565,7 @@ private fun createTiffSlices(
         )
     )
 
-    val mergedDirectories = if (tiffContents.makerNoteDirectory != null)
-        tiffContents.directories + tiffContents.makerNoteDirectory!!
-    else
-        tiffContents.directories
+    val mergedDirectories = mergeMakerNote(tiffContents.directories, tiffContents.makerNoteDirectory)
 
     for (directory in mergedDirectories)
         slices.addAll(createTiffDirectorySlices(directory, startPosition, exifBytes, tiffContents))
@@ -851,7 +865,7 @@ private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice
     return slices
 }
 
-private fun createMetaBoxSlices(metaBox: MetaBox): List<LabeledSlice> {
+internal fun createMetaBoxSlices(metaBox: MetaBox): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
@@ -903,7 +917,7 @@ private fun createMetaBoxSlices(metaBox: MetaBox): List<LabeledSlice> {
     return slices
 }
 
-private fun createItemLocationBoxSlices(
+internal fun createItemLocationBoxSlices(
     ilocBox: ItemLocationBox,
     metaBox: MetaBox
 ): List<LabeledSlice> {
@@ -1002,7 +1016,7 @@ private fun createItemLocationBoxSlices(
     return slices
 }
 
-private fun createItemInformationBoxSlices(iinfBox: ItemInformationBox): List<LabeledSlice> {
+internal fun createItemInformationBoxSlices(iinfBox: ItemInformationBox): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
@@ -1085,7 +1099,7 @@ private fun createItemInformationBoxSlices(iinfBox: ItemInformationBox): List<La
     return slices
 }
 
-private fun createMdatSlices(
+internal fun createMdatSlices(
     mdatBox: Box,
     metadataOffsets: List<MetadataOffset>,
     bytes: ByteArray
@@ -1157,7 +1171,7 @@ private fun createMdatSlices(
     return slices
 }
 
-private fun createExifBoxSlices(exifBox: ExifBox): List<LabeledSlice> {
+internal fun createExifBoxSlices(exifBox: ExifBox): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
