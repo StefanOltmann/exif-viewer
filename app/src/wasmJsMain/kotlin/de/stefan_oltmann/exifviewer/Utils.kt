@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package de.stefan_oltmann.exifviewer
+
 import org.khronos.webgl.Uint8Array
 import org.khronos.webgl.get
 import org.khronos.webgl.set

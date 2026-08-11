@@ -17,8 +17,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum class SeparatorLineType {
-    NONE,
-    THIN,
-    BOLD
-}
+package de.stefan_oltmann.exifviewer
+
+/**
+ * Describes a range of bytes of the file that should be displayed
+ * together in the HEX view, together with its label and appearance.
+ */
+data class LabeledSlice(
+    val range: IntRange,
+    val label: String,
+    val emphasisOnFirstBytes: Int = 0,
+    val snipAfterLineCount: Int = Int.MAX_VALUE,
+    val separatorLineType: SeparatorLineType = SeparatorLineType.BOLD,
+    val highlightId: String? = null,
+    val highlightLabel: Boolean = true,
+    val labelTooltip: String? = null
+)

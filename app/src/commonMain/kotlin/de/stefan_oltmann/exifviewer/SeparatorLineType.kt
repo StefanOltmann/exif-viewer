@@ -17,13 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-data class LabeledSlice(
-    val range: IntRange,
-    val label: String,
-    val emphasisOnFirstBytes: Int = 0,
-    val snipAfterLineCount: Int = Int.MAX_VALUE,
-    val separatorLineType: SeparatorLineType = SeparatorLineType.BOLD,
-    val highlightId: String? = null,
-    val highlightLabel: Boolean = true,
-    val labelTooltip: String? = null
-)
+package de.stefan_oltmann.exifviewer
+
+/**
+ * Determines how a [LabeledSlice] is separated from the previous one
+ * in the HEX view.
+ */
+enum class SeparatorLineType {
+    NONE,
+    THIN,
+    BOLD
+}

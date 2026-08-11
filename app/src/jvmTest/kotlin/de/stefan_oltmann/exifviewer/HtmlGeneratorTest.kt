@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package de.stefan_oltmann.exifviewer
+
 import de.stefan_oltmann.kim.Kim
 import kotlin.io.path.Path
 import kotlin.io.path.readBytes
