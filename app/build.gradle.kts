@@ -1,5 +1,15 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
+}
+
+detekt {
+    source.setFrom("src", "build.gradle.kts")
+    config.setFrom("../detekt.yml")
+    allRules = true
+    parallel = true
+    ignoreFailures = true
 }
 
 kotlin {
@@ -52,3 +62,8 @@ kotlin {
         }
     }
 }
+
+// region Code coverage
+kover {
+}
+// endregion

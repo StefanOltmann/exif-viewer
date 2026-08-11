@@ -5,3 +5,6 @@
 .idea
 /.kotlin/
 local.properties
+/AGENTS.md
+/TODO.md
+/opencode.json

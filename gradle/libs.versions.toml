@@ -2,6 +2,8 @@
 kotlin = "2.4.10"
 kotlinx-io = "0.9.1"
 kim = "0.33.0"
+detekt = "2.0.0-alpha.6"
+kover = "0.9.9"
 
 [libraries]
 kotlinx-io = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", version.ref = "kotlinx-io" }
@@ -9,3 +11,5 @@ kim = { group = "de.stefan-oltmann", name = "kim", version.ref = "kim" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
