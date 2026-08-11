@@ -31,7 +31,7 @@ jobs:
         # Execute allTests to prevent accidental release of a broken app
         run: |
           chmod +x ./gradlew
-          ./gradlew allTests wasmJsBrowserDistribution
+          ./gradlew allTests koverVerify detekt wasmJsBrowserDistribution
       - name: Deploy over FTP
         uses: modern-dev/ftp-mirror@v2
         with:

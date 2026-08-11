@@ -64,5 +64,14 @@ kotlin {
 
 // region Code coverage
 kover {
+    reports {
+        total {
+            verify {
+                rule {
+                    minBound(100)
+                }
+            }
+        }
+    }
 }
 // endregion
