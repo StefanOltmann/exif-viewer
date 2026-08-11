@@ -79,7 +79,7 @@ comments:
 complexity:
   active: true
   CognitiveComplexMethod:
-    active: false
+    active: true
     allowedComplexity: 15
   ComplexCondition:
     active: true

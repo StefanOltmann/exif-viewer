@@ -1408,7 +1408,9 @@ private fun completeSlices(
     return completedSlices
 }
 
-@OptIn(ExperimentalStdlibApi::class)
+/**
+ * Builds the HEX view HTML for the given bytes and their labeled slices.
+ */
 private fun generateHtmlFromSlices(
     bytes: ByteArray,
     slices: List<LabeledSlice>
@@ -1416,139 +1418,170 @@ private fun generateHtmlFromSlices(
 
     val completedSlices = completeSlices(bytes.size, slices)
 
-    val spanSb = StringBuilder()
-
     appendLine("""<div class="hex-box" style="font-family: monospace;">""")
 
-    for (slice in completedSlices) {
-
-        val bytesOfLine = mutableListOf<Byte>()
-
-        var skipToPosition: Int? = null
-
-        var firstLineOfSegment = true
-
-        if (slice.separatorLineType == SeparatorLineType.THIN)
-            appendLine(THIN_HR_HTML)
-
-        if (slice.separatorLineType == SeparatorLineType.BOLD)
-            appendLine(BOLD_HR_HTML)
-
-        for (position in slice.range) {
-
-            if (skipToPosition != null && position < skipToPosition)
-                continue
-            else
-                skipToPosition = null
-
-            val byte = bytes[position]
-
-            if (bytesOfLine.isEmpty())
-                append(toPaddedPos(position) + SEPARATOR)
-
-            bytesOfLine.add(byte)
-
-            /* Emphasis on the marker bytes. */
-            if (firstLineOfSegment && bytesOfLine.size <= slice.emphasisOnFirstBytes)
-                append("<b>" + byte.toHexString(HexFormat.UpperCase) + "</b>$SPACE")
-            else
-                append(byte.toHexString(HexFormat.UpperCase) + SPACE)
-
-            /* Extra spacing in the middle to have two pairs of 8 bytes. */
-            if (bytesOfLine.size == BYTES_PER_ROW / 2)
-                append(SPACE)
-
-            if (bytesOfLine.size == BYTES_PER_ROW || position == slice.range.last) {
-
-                val remainingByteCount = BYTES_PER_ROW - bytesOfLine.size
-
-                if (remainingByteCount > 0) {
-
-                    append(SPACE.repeat(remainingByteCount * CHARS_PER_BYTE))
-
-                    if (remainingByteCount > BYTES_PER_ROW / 2)
-                        append(SPACE)
-                }
-
-                append("|$SPACE")
-
-                if (slice.highlightId != null && !slice.highlightLabel)
-                    append(
-                        "<span class=\"${slice.highlightId}\">" +
-                            decodeBytesForHexView(bytesOfLine) + "</span>"
-                    )
-                else
-                    append(decodeBytesForHexView(bytesOfLine))
-
-                if (remainingByteCount > 0)
-                    append(SPACE.repeat(remainingByteCount))
-
-                append(SEPARATOR)
-
-                /* Write segment marker info on the line where it started. */
-                if (firstLineOfSegment) {
-
-                    val hasExtras = (slice.highlightId != null && slice.highlightLabel) ||
-                        slice.labelTooltip != null
-
-                    if (hasExtras) {
-
-                        spanSb.clear()
-
-                        spanSb.append("<span")
-
-                        if (slice.highlightId != null && slice.highlightLabel)
-                            spanSb.append(" class=\"${slice.highlightId}\"")
-
-                        if (slice.labelTooltip != null)
-                            spanSb.append(" title=\"${slice.labelTooltip}\"")
-
-                        spanSb.append(">")
-                        spanSb.append(slice.label)
-                        spanSb.append("</span>")
-
-                        append(spanSb.toString())
-
-                    } else {
-
-                        append(slice.label)
-                    }
-
-                    firstLineOfSegment = false
-                }
-
-                appendLine("<br>")
-
-                bytesOfLine.clear()
-
-                val printedBytesCount = position - slice.range.first + 1
-                val maxBytesToPrint = slice.snipAfterLineCount * BYTES_PER_ROW
-
-                /*
-                 * Start of Scan contains image data and is very long. We want to skip
-                 * all these data which are not useful for a metadata hex dump.
-                 */
-                if (printedBytesCount >= maxBytesToPrint && position != slice.range.last) {
-
-                    /* Skip to the end of the segment in the next iteration. */
-                    skipToPosition = slice.range.last - BYTES_PER_ROW + 1
-
-                    val byteCountToSkip = skipToPosition - position - 1
-
-                    if (byteCountToSkip > 0) {
-
-                        append(toPaddedPos(position) + SEPARATOR)
-
-                        append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
-
-                        appendLine("$SPACE|${SPACE.repeat(SNIP_LINE_SEPARATOR_SPACES)}|<br>")
-                    }
-                }
-            }
-        }
-    }
+    for (slice in completedSlices)
+        appendSliceHtml(bytes, slice)
 
     appendLine("</div>")
+}
+
+/**
+ * Appends the HEX view lines of the slice, including the separating
+ * horizontal rule and the snip message line when the byte limit is reached.
+ */
+private fun StringBuilder.appendSliceHtml(bytes: ByteArray, slice: LabeledSlice) {
+
+    appendSeparatorLine(slice.separatorLineType)
+
+    var position = slice.range.first
+
+    while (position <= slice.range.last) {
+
+        val lineEnd = minOf(position + BYTES_PER_ROW - 1, slice.range.last)
+
+        appendHexLine(
+            bytes = bytes,
+            slice = slice,
+            lineStart = position,
+            lineEnd = lineEnd,
+            firstLineOfSegment = position == slice.range.first
+        )
+
+        position = nextPositionAfterSnip(slice, lineEnd)
+    }
+}
+
+/**
+ * Appends the snip message line when the printed byte limit of the slice is
+ * reached and returns the position of the first byte of the next line.
+ */
+private fun StringBuilder.nextPositionAfterSnip(slice: LabeledSlice, lineEnd: Int): Int {
+
+    val printedBytesCount = lineEnd - slice.range.first + 1
+    val maxBytesToPrint = slice.snipAfterLineCount * BYTES_PER_ROW
+
+    val lastLineStart = slice.range.last - BYTES_PER_ROW + 1
+    val byteCountToSkip = lastLineStart - lineEnd - 1
+
+    val snipLimitReached = printedBytesCount >= maxBytesToPrint && lineEnd != slice.range.last
+
+    if (!snipLimitReached || byteCountToSkip <= 0)
+        return lineEnd + 1
+
+    append(toPaddedPos(lineEnd) + SEPARATOR)
+
+    append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
+
+    appendLine("$SPACE|${SPACE.repeat(SNIP_LINE_SEPARATOR_SPACES)}|<br>")
+
+    return lastLineStart
+}
+
+/**
+ * Appends one HEX view line for the byte range of the slice, including the
+ * decoded ASCII area and the segment label on the line where it started.
+ */
+private fun StringBuilder.appendHexLine(
+    bytes: ByteArray,
+    slice: LabeledSlice,
+    lineStart: Int,
+    lineEnd: Int,
+    firstLineOfSegment: Boolean
+) {
+
+    append(toPaddedPos(lineStart) + SEPARATOR)
+
+    for (position in lineStart..lineEnd) {
+
+        val positionInLine = position - lineStart + 1
+
+        val byte = bytes[position]
+
+        /* Emphasis on the marker bytes. */
+        if (firstLineOfSegment && positionInLine <= slice.emphasisOnFirstBytes)
+            append("<b>" + byte.toHexString(HexFormat.UpperCase) + "</b>$SPACE")
+        else
+            append(byte.toHexString(HexFormat.UpperCase) + SPACE)
+
+        /* Extra spacing in the middle to have two pairs of 8 bytes. */
+        if (positionInLine == BYTES_PER_ROW / 2)
+            append(SPACE)
+    }
+
+    val remainingByteCount = BYTES_PER_ROW - (lineEnd - lineStart + 1)
+
+    if (remainingByteCount > 0) {
+
+        append(SPACE.repeat(remainingByteCount * CHARS_PER_BYTE))
+
+        if (remainingByteCount > BYTES_PER_ROW / 2)
+            append(SPACE)
+    }
+
+    append("|$SPACE")
+
+    val decodedBytes = decodeBytesForHexView(bytes.slice(lineStart..lineEnd))
+
+    if (slice.highlightId != null && !slice.highlightLabel)
+        append("<span class=\"${slice.highlightId}\">$decodedBytes</span>")
+    else
+        append(decodedBytes)
+
+    if (remainingByteCount > 0)
+        append(SPACE.repeat(remainingByteCount))
+
+    append(SEPARATOR)
+
+    if (firstLineOfSegment)
+        appendSegmentLabel(slice)
+
+    appendLine("<br>")
+}
+
+/**
+ * Appends the label of the slice, wrapped in a span when the slice uses a
+ * highlight class or a tooltip.
+ */
+private fun StringBuilder.appendSegmentLabel(slice: LabeledSlice) {
+
+    val hasExtras = (slice.highlightId != null && slice.highlightLabel) ||
+        slice.labelTooltip != null
+
+    if (!hasExtras) {
+        append(slice.label)
+        return
+    }
+
+    val labelWithExtras = buildString {
+
+        append("<span")
+
+        if (slice.highlightId != null && slice.highlightLabel)
+            append(" class=\"${slice.highlightId}\"")
+
+        if (slice.labelTooltip != null)
+            append(" title=\"${slice.labelTooltip}\"")
+
+        append(">")
+        append(slice.label)
+        append("</span>")
+    }
+
+    append(labelWithExtras)
+}
+
+/**
+ * Appends the horizontal rule that separates the slice from the previous
+ * one, if its separator line type requires one.
+ */
+private fun StringBuilder.appendSeparatorLine(separatorLineType: SeparatorLineType) {
+
+    if (separatorLineType == SeparatorLineType.THIN)
+        appendLine(THIN_HR_HTML)
+
+    if (separatorLineType == SeparatorLineType.BOLD)
+        appendLine(BOLD_HR_HTML)
 }
 
 private fun centerMessageInLine(message: String): String {
@@ -1561,7 +1594,6 @@ private fun centerMessageInLine(message: String): String {
     return SPACE.repeat(whitespaceBefore) + message + SPACE.repeat(whitespaceAfter)
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 private fun toPaddedPos(pos: Int) =
     if (SHOW_HTML_OFFSETS_AS_HEX)
         pos.toHexString()
