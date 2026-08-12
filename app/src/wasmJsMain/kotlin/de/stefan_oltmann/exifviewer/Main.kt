@@ -86,6 +86,12 @@ private val geotiffElement =
 private val hexElement =
     document.getElementById("hex") as Element
 
+/*
+ * Tracks the blob URL of the currently displayed thumbnail so it can be
+ * revoked when the thumbnail is replaced or cleared.
+ */
+private var currentThumbnailUrl: String? = null
+
 fun main() {
     registerFileInputEvents()
 }
@@ -356,13 +362,18 @@ private fun updateAll(html: String) {
 private fun updateHtml(element: Element?, html: String) =
     element?.let { it.innerHTML = html }
 
+@OptIn(ExperimentalWasmJsInterop::class)
 private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation) {
 
     if (imageBytes != null) {
 
         val blob = imageBytes.toBlob("image/jpeg")
 
-        val url = URL.Companion.createObjectURL(blob)
+        val url = URL.createObjectURL(blob)
+
+        revokeThumbnailUrl()
+
+        currentThumbnailUrl = url
 
         thumbnailElement.src = url
 
@@ -404,12 +415,42 @@ private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation
 
                 else -> {}
             }
+
+            /*
+             * The image has finished loading, its blob URL is no longer
+             * needed and can be revoked.
+             */
+            URL.revokeObjectURL(url)
+        }
+
+        /*
+         * Also revoke the blob URL when the image fails to load.
+         */
+        thumbnailElement.onerror = { _, _, _, _, _ ->
+
+            URL.revokeObjectURL(url)
+
+            null
         }
 
     } else {
 
         thumbnailElement.src = ""
+
+        revokeThumbnailUrl()
     }
+}
+
+/**
+ * Revokes the blob URL of the currently displayed thumbnail, if any.
+ */
+private fun revokeThumbnailUrl() {
+
+    val url = currentThumbnailUrl ?: return
+
+    URL.revokeObjectURL(url)
+
+    currentThumbnailUrl = null
 }
 
 private fun setBoxVisibility(
