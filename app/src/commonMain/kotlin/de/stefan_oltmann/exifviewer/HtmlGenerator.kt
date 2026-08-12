@@ -357,7 +357,7 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
                     /* Skip everything that is too long. */
                     snipAfterLineCount = when (segmentInfo.marker) {
                         /* Try to show much of a comment. */
-                        JpegConstants.COM_MARKER_1, JpegConstants.COM_MARKER_2 -> 10
+                        JpegConstants.COM_MARKER_1 -> 10
                         /* Display more of IPTC if it's not too long. */
                         JpegConstants.JPEG_APP13_MARKER -> 10 // 12 lines in total
                         /* Show the beginning of XMP */

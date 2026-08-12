@@ -288,6 +288,28 @@ class HtmlGeneratorEdgeCaseTest {
     }
 
     /**
+     * Verifies that a JPEG comment segment renders with its COM label.
+     */
+    @Test
+    fun testGenerateHexHtmlJpegWithComment() {
+
+        val bytes = byteArrayOf(
+            /* SOI */
+            0xFF.toByte(), 0xD8.toByte(),
+            /* COM segment with 4 comment bytes */
+            0xFF.toByte(), 0xFE.toByte(), 0x00, 0x06,
+            't'.code.toByte(), 'e'.code.toByte(), 's'.code.toByte(), 't'.code.toByte(),
+            /* SOS, image data, and EOI to form a complete file */
+            0xFF.toByte(), 0xDA.toByte(), 0x01, 0x02, 0x03, 0x04,
+            0xFF.toByte(), 0xD9.toByte()
+        )
+
+        val actualHtml = generateHexHtml(bytes)
+
+        assertTrue(actualHtml.contains("COM&nbsp;(Comment)"))
+    }
+
+    /**
      * Verifies that an unknown TIFF tag renders an Unknown label and a hex
      * fallback for its value.
      */
