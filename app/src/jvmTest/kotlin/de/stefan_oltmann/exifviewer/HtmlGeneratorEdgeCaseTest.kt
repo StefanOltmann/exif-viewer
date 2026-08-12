@@ -280,6 +280,29 @@ class HtmlGeneratorEdgeCaseTest {
     }
 
     /**
+     * Verifies that the HEX view tolerates slices that extend beyond the
+     * end of the file instead of throwing.
+     */
+    @Test
+    fun testHexHtmlWithTrailingMetaBox() {
+
+        val ftypBox = box(
+            type = "ftyp",
+            payload = "heic".encodeToByteArray() + u32(value = 0) + u32(value = 0)
+        )
+
+        val trailingMetaBox = box(
+            type = "meta",
+            payload = byteArrayOf(0, 0, 0, 0) +
+                hdlrBox() + pitmBox() + iinfBox() + ilocBox()
+        )
+
+        val actualHtml = generateHexHtml(ftypBox + trailingMetaBox)
+
+        assertTrue(actualHtml.contains("Box&nbsp;iloc&nbsp;header"))
+    }
+
+    /**
      * Verifies that an mdat box at offset zero renders its XMP extent.
      */
     @Test
@@ -612,3 +635,30 @@ private fun infeBox(itemId: Int): ByteArray =
         byteArrayOf(0, 0) +
         "test".encodeToByteArray() +
         byteArrayOf(0)
+
+/**
+ * Builds a version-2 item location box without entries.
+ */
+private fun ilocBox(): ByteArray =
+    box(
+        type = "iloc",
+        payload = byteArrayOf(2, 0, 0, 0, 0x44.toByte(), 0x00) + u32(value = 0)
+    )
+
+/**
+ * Builds a primary item box referencing item id 1.
+ */
+private fun pitmBox(): ByteArray =
+    box(
+        type = "pitm",
+        payload = byteArrayOf(0, 0, 0, 0, 0, 1)
+    )
+
+/**
+ * Builds a version-1 item information box without entries.
+ */
+private fun iinfBox(): ByteArray =
+    box(
+        type = "iinf",
+        payload = byteArrayOf(1, 0, 0, 0) + u32(value = 0)
+    )

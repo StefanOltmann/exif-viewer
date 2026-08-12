@@ -885,11 +885,11 @@ internal fun createMetaBoxSlices(metaBox: MetaBox): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
-    val firstBoxOffset = metaBox.boxes.first().offset.toInt()
+    val firstSubBoxOffset = metaBox.boxes.first().offset.toInt()
 
     slices.add(
         LabeledSlice(
-            range = metaBox.offset.toInt() until firstBoxOffset,
+            range = metaBox.offset.toInt() until firstSubBoxOffset,
             label = "Box" + SPACE + "meta" + SPACE + "header",
             separatorLineType = SeparatorLineType.BOLD,
             snipAfterLineCount = 3
@@ -1386,27 +1386,29 @@ private fun completeSlices(
 
     for (slice in slices) {
 
-        if (completedSlices.isEmpty()) {
-            completedSlices.add(slice)
-            continue
-        }
+        val clampedSlice = slice.clampedTo(byteCount) ?: continue
 
-        val lastSlice = completedSlices.last()
+        val lastSlice = completedSlices.lastOrNull()
 
-        val needToFillGap = slice.range.first - lastSlice.range.last > 1
+        val needToFillGap = lastSlice == null || clampedSlice.range.first - lastSlice.range.last > 1
 
         if (needToFillGap) {
 
-            completedSlices.add(
-                LabeledSlice(
-                    range = lastSlice.range.last + 1 until slice.range.first,
-                    label = "[unknown]",
-                    separatorLineType = SeparatorLineType.THIN
+            val gapStart = lastSlice?.range?.last?.plus(1) ?: 0
+
+            if (gapStart < clampedSlice.range.first) {
+
+                completedSlices.add(
+                    LabeledSlice(
+                        range = gapStart until clampedSlice.range.first,
+                        label = "[unknown]",
+                        separatorLineType = SeparatorLineType.THIN
+                    )
                 )
-            )
+            }
         }
 
-        completedSlices.add(slice)
+        completedSlices.add(clampedSlice)
     }
 
     val lastSlice = completedSlices.last()
@@ -1425,6 +1427,21 @@ private fun completeSlices(
     }
 
     return completedSlices
+}
+
+/**
+ * Returns the slice with its range trimmed to the file bounds, or null
+ * when the slice lies completely outside of the file.
+ */
+private fun LabeledSlice.clampedTo(byteCount: Int): LabeledSlice? {
+
+    if (byteCount <= 0 || range.first >= byteCount)
+        return null
+
+    val first = range.first.coerceAtLeast(0)
+    val last = range.last.coerceAtMost(byteCount - 1)
+
+    return copy(range = first..last)
 }
 
 /**
