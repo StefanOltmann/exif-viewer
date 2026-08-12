@@ -256,12 +256,8 @@ private fun processFile(uint8Array: Uint8Array) {
 
                 val sb = StringBuilder()
 
-                for (chunk in unknownTextChunks) {
-
-                    sb.appendLine("<h3>${chunk.getKeyword()}</h3>")
-                    sb.appendLine(chunk.getText().escapeHtmlSpecialChars())
-                    sb.appendLine()
-                }
+                for (chunk in unknownTextChunks)
+                    sb.append(buildPngTextChunkHtml(chunk.getKeyword(), chunk.getText()))
 
                 val text = sb.toString()
 

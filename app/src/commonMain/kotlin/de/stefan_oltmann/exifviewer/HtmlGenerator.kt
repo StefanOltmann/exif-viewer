@@ -125,15 +125,15 @@ internal fun buildExifHtmlString(exif: TiffContents?): String =
                 append("</td>")
 
                 append("<td>")
-                append(entry.tagFormatted)
+                append(entry.tagFormatted.escapeHtmlSpecialChars())
                 append("</td>")
 
                 append("<td>")
-                append(entry.tagInfo?.name ?: "Unknown")
+                append((entry.tagInfo?.name ?: "Unknown").escapeHtmlSpecialChars())
                 append("</td>")
 
                 append("<td>")
-                append(entry.valueDescription)
+                append(entry.valueDescription.escapeHtmlSpecialChars())
                 append("</td>")
 
                 append("</tr>")
@@ -204,6 +204,21 @@ internal fun buildXmpHtmlString(xmp: String?): String =
             xmp.escapeHtmlSpecialChars()
                 .replace("\n", "<br>")
         )
+    }
+
+/**
+ * Builds the HTML of one PNG text chunk, escaping the file-derived
+ * keyword and text before they enter the DOM.
+ */
+internal fun buildPngTextChunkHtml(keyword: String, text: String): String =
+    buildString {
+
+        append("<h3>${keyword.escapeHtmlSpecialChars()}</h3>")
+
+        appendLine()
+        append(text.escapeHtmlSpecialChars())
+        appendLine()
+        appendLine()
     }
 
 fun MediaMetadata.toGeoTiffHtmlString(): String =
@@ -1561,7 +1576,7 @@ private fun StringBuilder.appendSegmentLabel(slice: LabeledSlice) {
             append(" class=\"${slice.highlightId}\"")
 
         if (slice.labelTooltip != null)
-            append(" title=\"${slice.labelTooltip}\"")
+            append(" title=\"${slice.labelTooltip.escapeHtmlSpecialChars()}\"")
 
         append(">")
         append(slice.label)
@@ -1604,6 +1619,7 @@ fun String.escapeHtmlSpecialChars(): String =
     this.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
+        .replace("\"", "&quot;")
         .escapeSpaces()
 
 private fun String.escapeSpaces(): String =
