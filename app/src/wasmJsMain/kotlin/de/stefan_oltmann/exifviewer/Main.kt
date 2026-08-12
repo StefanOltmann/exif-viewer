@@ -116,15 +116,22 @@ private fun registerFileInputEvents() {
 
         event as DragEvent
 
-        event.preventDefault();
-        dropbox.classList.remove("highlight");
+        event.preventDefault()
+        dropbox.classList.remove("highlight")
 
-        val items = event.dataTransfer?.items;
+        val items = event.dataTransfer?.items
 
         if (items == null || items.length == 0)
             return@addEventListener
 
-        handleFile(items[0]!!.getAsFile()!!)
+        /*
+         * Only the first dropped file is processed; non-file drops
+         * such as directories are ignored.
+         */
+        val file = items[0]?.getAsFile()
+
+        if (file != null)
+            handleFile(file)
     }
 
     dropbox?.addEventListener("click") { _ ->
@@ -140,7 +147,10 @@ private fun registerFileInputEvents() {
         if (files == null || files.length == 0)
             return@addEventListener
 
-        handleFile(files[0]!!)
+        val file = files[0]
+
+        if (file != null)
+            handleFile(file)
     }
 }
 
@@ -185,7 +195,7 @@ private fun processFile(uint8Array: Uint8Array) {
 
             setBoxVisibility(
                 thumbnailBoxVisible = false,
-                exifBoxVisible = true, // to show the message
+                exifBoxVisible = true, /* to show the message */
                 iptcBoxVisible = false,
                 xmpBoxVisible = false,
                 textBoxVisible = false,

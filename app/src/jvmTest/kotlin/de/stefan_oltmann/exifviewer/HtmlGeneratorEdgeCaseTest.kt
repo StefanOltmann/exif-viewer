@@ -199,6 +199,48 @@ class HtmlGeneratorEdgeCaseTest {
     }
 
     /**
+     * Verifies that infe box slices of an iinf version-0 box start at the
+     * real box position, compensating the early Kim offset.
+     */
+    @Test
+    fun testInfeSlicesForIinfVersion0() {
+
+        val itemInformationBox = ItemInformationBox(
+            offset = 100,
+            size = 0,
+            largeSize = null,
+            payload = byteArrayOf(0, 0, 0, 0, 0, 1) + infeBox(itemId = 1)
+        )
+
+        val slices = createItemInformationBoxSlices(itemInformationBox)
+
+        val infeSlice = slices.first { it.label.contains("Item") }
+
+        assertTrue(infeSlice.range.first == 114)
+    }
+
+    /**
+     * Verifies that infe box slices of an iinf version-1 box start at the
+     * real box position without correction.
+     */
+    @Test
+    fun testInfeSlicesForIinfVersion1() {
+
+        val itemInformationBox = ItemInformationBox(
+            offset = 100,
+            size = 0,
+            largeSize = null,
+            payload = byteArrayOf(1, 0, 0, 0) + u32(value = 1) + infeBox(itemId = 1)
+        )
+
+        val slices = createItemInformationBoxSlices(itemInformationBox)
+
+        val infeSlice = slices.first { it.label.contains("Item") }
+
+        assertTrue(infeSlice.range.first == 116)
+    }
+
+    /**
      * Verifies that a meta box renders a trailing generic box with a bold
      * separator.
      */
@@ -543,3 +585,15 @@ private fun tiffWithUnknownTag(): ByteArray =
         0, 0, 0, 0,
         1, 0, 0, 0, 2, 0, 0, 0
     )
+
+/**
+ * Builds a version-2 item info entry box with the given item id.
+ */
+private fun infeBox(itemId: Int): ByteArray =
+    u32(value = 21) +
+        "infe".encodeToByteArray() +
+        byteArrayOf(2, 0, 0, 0) +
+        byteArrayOf((itemId ushr 8).toByte(), itemId.toByte()) +
+        byteArrayOf(0, 0) +
+        "test".encodeToByteArray() +
+        byteArrayOf(0)

@@ -374,9 +374,9 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
                         /* Try to show much of a comment. */
                         JpegConstants.COM_MARKER_1 -> 10
                         /* Display more of IPTC if it's not too long. */
-                        JpegConstants.JPEG_APP13_MARKER -> 10 // 12 lines in total
+                        JpegConstants.JPEG_APP13_MARKER -> 10 /* 12 lines in total */
                         /* Show the beginning of XMP */
-                        JpegConstants.JPEG_APP1_MARKER -> 6 // 8 lines in total
+                        JpegConstants.JPEG_APP1_MARKER -> 6 /* 8 lines in total */
                         /* Shorten everything else (like SOS) */
                         else -> 1
                     }
@@ -603,10 +603,7 @@ private fun createTiffDirectorySlices(
 
     val slices = mutableListOf<LabeledSlice>()
 
-    val directoryDescription = if (directory.type == 1)
-        "IFD1" // Workaround for bad name in Kim
-    else
-        TiffDirectory.description(directory.type)
+    val directoryDescription = TiffDirectory.description(directory.type)
 
     val directoryOffset = directory.offset + startPosition
 
@@ -1089,8 +1086,11 @@ internal fun createItemInformationBoxSlices(iinfBox: ItemInformationBox): List<L
 
         infeBox as ItemInfoEntryBox
 
-        // FIXME Offset bug in Kim v0.14?
-        val infeBoxOffset = infeBox.offset.toInt() + 2
+        /*
+         * Workaround: Kim reports infe box offsets two bytes too early for iinf
+         * version 0, whose two-byte entry count is not accounted for.
+         */
+        val infeBoxOffset = infeBox.offset.toInt() + if (iinfBox.version == 0) 2 else 0
 
         val subBoxRange =
             infeBoxOffset until infeBoxOffset + infeBox.actualLength.toInt()
