@@ -48,6 +48,21 @@ import kotlin.test.assertTrue
 class HtmlGeneratorEdgeCaseTest {
 
     /**
+     * Verifies that the position counter width grows with the file size.
+     */
+    @Test
+    fun testPositionCounterLength() {
+
+        assertTrue(positionCounterLength(byteCount = 0) == 1)
+        assertTrue(positionCounterLength(byteCount = 1) == 1)
+        assertTrue(positionCounterLength(byteCount = 10) == 1)
+        assertTrue(positionCounterLength(byteCount = 11) == 2)
+        assertTrue(positionCounterLength(byteCount = 99_999_999) == 8)
+        assertTrue(positionCounterLength(byteCount = 100_000_000) == 8)
+        assertTrue(positionCounterLength(byteCount = 100_000_001) == 9)
+    }
+
+    /**
      * Verifies that PDF magic bytes fall through to the unsupported-format
      * branch of [generateHexHtml].
      */

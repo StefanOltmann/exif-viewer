@@ -54,8 +54,12 @@ import de.stefan_oltmann.kim.format.webp.WebPImageParser
 import de.stefan_oltmann.kim.input.ByteArrayByteReader
 import de.stefan_oltmann.kim.model.MediaFormat
 
-/* Show byte positions up to 99 MB. Hopefully that's enough. */
-private const val POS_COUNTER_LENGTH = 8
+/**
+ * Returns the number of digits needed to display the largest byte
+ * position of a file with the given size.
+ */
+internal fun positionCounterLength(byteCount: Int): Int =
+    (byteCount - 1).coerceAtLeast(0).toString().length
 
 private const val SPACE: String = "&nbsp;"
 private const val SEPARATOR: String = "$SPACE|$SPACE"
@@ -1433,10 +1437,12 @@ private fun generateHtmlFromSlices(
 
     val completedSlices = completeSlices(bytes.size, slices)
 
+    val positionLength = positionCounterLength(bytes.size)
+
     appendLine("""<div class="hex-box" style="font-family: monospace;">""")
 
     for (slice in completedSlices)
-        appendSliceHtml(bytes, slice)
+        appendSliceHtml(bytes, slice, positionLength)
 
     appendLine("</div>")
 }
@@ -1445,7 +1451,11 @@ private fun generateHtmlFromSlices(
  * Appends the HEX view lines of the slice, including the separating
  * horizontal rule and the snip message line when the byte limit is reached.
  */
-private fun StringBuilder.appendSliceHtml(bytes: ByteArray, slice: LabeledSlice) {
+private fun StringBuilder.appendSliceHtml(
+    bytes: ByteArray,
+    slice: LabeledSlice,
+    positionLength: Int
+) {
 
     appendSeparatorLine(slice.separatorLineType)
 
@@ -1460,10 +1470,11 @@ private fun StringBuilder.appendSliceHtml(bytes: ByteArray, slice: LabeledSlice)
             slice = slice,
             lineStart = position,
             lineEnd = lineEnd,
-            firstLineOfSegment = position == slice.range.first
+            firstLineOfSegment = position == slice.range.first,
+            positionLength = positionLength
         )
 
-        position = nextPositionAfterSnip(slice, lineEnd)
+        position = nextPositionAfterSnip(slice, lineEnd, positionLength)
     }
 }
 
@@ -1471,7 +1482,11 @@ private fun StringBuilder.appendSliceHtml(bytes: ByteArray, slice: LabeledSlice)
  * Appends the snip message line when the printed byte limit of the slice is
  * reached and returns the position of the first byte of the next line.
  */
-private fun StringBuilder.nextPositionAfterSnip(slice: LabeledSlice, lineEnd: Int): Int {
+private fun StringBuilder.nextPositionAfterSnip(
+    slice: LabeledSlice,
+    lineEnd: Int,
+    positionLength: Int
+): Int {
 
     val printedBytesCount = lineEnd - slice.range.first + 1
     val maxBytesToPrint = slice.snipAfterLineCount * BYTES_PER_ROW
@@ -1484,7 +1499,7 @@ private fun StringBuilder.nextPositionAfterSnip(slice: LabeledSlice, lineEnd: In
     if (!snipLimitReached || byteCountToSkip <= 0)
         return lineEnd + 1
 
-    append(toPaddedPos(lineEnd) + SEPARATOR)
+    append(toPaddedPos(lineEnd, positionLength) + SEPARATOR)
 
     append(centerMessageInLine("[ ... snip $byteCountToSkip bytes ... ]"))
 
@@ -1502,10 +1517,11 @@ private fun StringBuilder.appendHexLine(
     slice: LabeledSlice,
     lineStart: Int,
     lineEnd: Int,
-    firstLineOfSegment: Boolean
+    firstLineOfSegment: Boolean,
+    positionLength: Int
 ) {
 
-    append(toPaddedPos(lineStart) + SEPARATOR)
+    append(toPaddedPos(lineStart, positionLength) + SEPARATOR)
 
     for (position in lineStart..lineEnd) {
 
@@ -1609,11 +1625,11 @@ private fun centerMessageInLine(message: String): String {
     return SPACE.repeat(whitespaceBefore) + message + SPACE.repeat(whitespaceAfter)
 }
 
-private fun toPaddedPos(pos: Int) =
+private fun toPaddedPos(pos: Int, length: Int) =
     if (SHOW_HTML_OFFSETS_AS_HEX)
         pos.toHexString()
     else
-        pos.toString().padStart(POS_COUNTER_LENGTH, '0')
+        pos.toString().padStart(length, '0')
 
 fun String.escapeHtmlSpecialChars(): String =
     this.replace("&", "&amp;")

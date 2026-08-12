@@ -92,6 +92,12 @@ private val hexElement =
  */
 private var currentThumbnailUrl: String? = null
 
+/* Refuse larger files because their bytes are copied several times while parsing. */
+private const val MAX_FILE_SIZE_MB = 100
+
+/* Bytes per megabyte for the file size guard. */
+private const val BYTES_PER_MEGABYTE = 1024.0 * 1024.0
+
 fun main() {
     registerFileInputEvents()
 }
@@ -162,6 +168,17 @@ private fun registerFileInputEvents() {
 
 @OptIn(ExperimentalWasmJsInterop::class)
 private fun handleFile(file: File) {
+
+    if (file.size.toDouble() > MAX_FILE_SIZE_MB * BYTES_PER_MEGABYTE) {
+
+        updateAll("File is too large (maximum $MAX_FILE_SIZE_MB MB).")
+
+        updateThumbnail(null, TiffOrientation.STANDARD)
+
+        makeAllRegularBoxesVisible()
+
+        return
+    }
 
     val fileReader = FileReader()
 
