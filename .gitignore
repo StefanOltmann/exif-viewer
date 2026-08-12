@@ -1,4 +1,3 @@
-!src/**/build/
 **/build/
 .DS_Store
 .gradle
