@@ -307,15 +307,14 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
-    for (segmentInfo in segmentInfos) {
+    for ((startPosition, marker, length) in segmentInfos) {
 
-        val startPosition = segmentInfo.offset
-        val endPosition = startPosition + segmentInfo.length
+        val endPosition = startPosition + length
 
         /*
          * The EXIF segment is an APP1 segment that starts with the EXIF identifier code.
          */
-        val isExifSegment = segmentInfo.marker == JpegConstants.JPEG_APP1_MARKER &&
+        val isExifSegment = marker == JpegConstants.JPEG_APP1_MARKER &&
             JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(
                 bytes.slice(
                     startIndex = startPosition + 4,
@@ -327,15 +326,15 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
 
             val exifBytes = bytes.slice(
                 startIndex = startPosition + 4 + JpegConstants.EXIF_IDENTIFIER_CODE.size,
-                count = segmentInfo.length - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
+                count = length - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
             )
 
             /* APP1 Header */
             slices.add(
                 LabeledSlice(
                     range = startPosition until startPosition + 4,
-                    label = JpegConstants.markerDescription(segmentInfo.marker).escapeHtmlSpecialChars()
-                        + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
+                    label = JpegConstants.markerDescription(marker).escapeHtmlSpecialChars()
+                        + SPACE + "[$length" + SPACE + "bytes]",
                     emphasisOnFirstBytes = 2
                 )
             )
@@ -366,15 +365,15 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
             slices.add(
                 LabeledSlice(
                     range = startPosition until endPosition,
-                    label = JpegConstants.markerDescription(segmentInfo.marker).escapeSpaces()
-                        + SPACE + "[${segmentInfo.length}" + SPACE + "bytes]",
+                    label = JpegConstants.markerDescription(marker).escapeSpaces()
+                        + SPACE + "[$length" + SPACE + "bytes]",
                     emphasisOnFirstBytes = 2,
-                    separatorLineType = if (segmentInfo.marker == JpegConstants.SOI_MARKER)
+                    separatorLineType = if (marker == JpegConstants.SOI_MARKER)
                         SeparatorLineType.NONE
                     else
                         SeparatorLineType.BOLD,
                     /* Skip everything that is too long. */
-                    snipAfterLineCount = when (segmentInfo.marker) {
+                    snipAfterLineCount = when (marker) {
                         /* Try to show much of a comment. */
                         JpegConstants.COM_MARKER_1 -> 10
                         /* Display more of IPTC if it's not too long. */
