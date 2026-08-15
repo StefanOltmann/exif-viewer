@@ -29,6 +29,7 @@ import de.stefan_oltmann.kim.format.bmff.box.MetaBox
 import de.stefan_oltmann.kim.format.jpeg.iptc.IptcMetadata
 import de.stefan_oltmann.kim.format.jxl.box.ExifBox
 import de.stefan_oltmann.kim.format.tiff.TiffReader
+import de.stefan_oltmann.kim.format.tiff.constant.TiffConstants
 import de.stefan_oltmann.kim.format.tiff.geotiff.GeoTiffDirectory
 import de.stefan_oltmann.kim.format.tiff.geotiff.GeoTiffGeographicType
 import de.stefan_oltmann.kim.format.tiff.geotiff.GeoTiffModelType
@@ -36,6 +37,7 @@ import de.stefan_oltmann.kim.format.tiff.geotiff.GeoTiffRasterType
 import kotlin.io.path.Path
 import kotlin.io.path.readBytes
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -103,6 +105,83 @@ class HtmlGeneratorEdgeCaseTest {
         val actualHtml = metadata.toExifHtmlString()
 
         assertTrue(actualHtml.contains("<table>"))
+    }
+
+    /**
+     * Verifies that the EXIF table renders the MakerNote sub-directories
+     * with their field names.
+     */
+    @Test
+    fun testExifHtmlIncludesMakerNoteSubDirectories() {
+
+        val actualHtml = readMetadata("photo_1.jpg").toExifHtmlString()
+
+        assertTrue(actualHtml.contains("MakerNoteCanonCameraSettings"))
+        assertTrue(actualHtml.contains("MacroMode"))
+        assertTrue(actualHtml.contains("MakerNoteCanonShotInfo"))
+    }
+
+    /**
+     * Verifies that the hex view highlights the MakerNote sub-directories
+     * and their fields at the value positions.
+     */
+    @Test
+    fun testHexHtmlIncludesMakerNoteSubDirectories() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_1.jpg").readBytes()
+
+        val actualHtml = generateHexHtml(imageBytes)
+
+        assertTrue(actualHtml.contains("MakerNoteCanonCameraSettings"))
+        assertTrue(actualHtml.contains("MacroMode"))
+    }
+
+    /**
+     * Verifies that sub-directory fields sharing one value range render
+     * only once, as with the Apple RunTime blob.
+     */
+    @Test
+    fun testMakerNoteSubDirectorySlicesSkipDuplicateRanges() {
+
+        val exif = readMetadata("photo_5.heic").exif
+
+        assertNotNull(exif)
+
+        val runtimeDirectory = exif.makerNoteSubDirectories
+            .first { it.type == TiffConstants.TIFF_MAKER_NOTE_APPLE_RUN_TIME }
+
+        val slices = createMakerNoteSubDirectorySlices(runtimeDirectory, startPosition = 0)
+
+        assertTrue(slices.count { it.label.contains("value") } == 1)
+    }
+
+    /**
+     * Verifies that the HEX view position counter only ever increments,
+     * even when a value is rendered twice, for example the MakerNote
+     * blob values that are also broken down into sub-directory slices.
+     */
+    @Test
+    fun testHexHtmlPositionCounterOnlyIncrements() {
+
+        for (fileName in HEX_VIEW_FIXTURES) {
+
+            val imageBytes = Path("src/jvmTest/resources/$fileName").readBytes()
+
+            val actualHtml = generateHexHtml(imageBytes)
+
+            val positionLength = positionCounterLength(imageBytes.size)
+
+            val positionPattern = Regex("(?m)^\\d{$positionLength}&nbsp;\\|&nbsp;")
+
+            val positions = positionPattern.findAll(actualHtml)
+                .map { it.value.substringBefore("&nbsp;").toInt() }
+                .toList()
+
+            assertTrue(
+                positions.zipWithNext().all { (previous, next) -> next > previous },
+                "Position counter jumped backwards for $fileName"
+            )
+        }
     }
 
     /**
@@ -215,7 +294,7 @@ class HtmlGeneratorEdgeCaseTest {
 
     /**
      * Verifies that infe box slices of an iinf version-0 box start at the
-     * real box position, compensating the early Kim offset.
+     * position after the two-byte entry count, as Kim reports it.
      */
     @Test
     fun testInfeSlicesForIinfVersion0() {
@@ -231,7 +310,7 @@ class HtmlGeneratorEdgeCaseTest {
 
         val infeSlice = slices.first { it.label.contains("Item") }
 
-        assertTrue(infeSlice.range.first == 114)
+        assertEquals(infeSlice.range.first, 114)
     }
 
     /**
@@ -561,6 +640,21 @@ class HtmlGeneratorEdgeCaseTest {
  */
 private fun readMetadata(fileName: String) =
     requireNotNull(Kim.readMetadata(Path("src/jvmTest/resources/$fileName").readBytes()))
+
+/**
+ * The resource images that the HEX view golden tests render.
+ */
+private val HEX_VIEW_FIXTURES: List<String> = listOf(
+    "photo_1.jpg",
+    "photo_2.tif",
+    "photo_3.jpg",
+    "photo_4.png",
+    "photo_5.heic",
+    "photo_6.jxl",
+    "photo_7.webp",
+    "photo_8.tif",
+    "photo_9.gif"
+)
 
 /**
  * Encodes an unsigned 32-bit value as a big-endian byte array for box

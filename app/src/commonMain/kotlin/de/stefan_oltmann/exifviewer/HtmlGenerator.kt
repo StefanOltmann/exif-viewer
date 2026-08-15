@@ -85,15 +85,6 @@ private const val BOLD_HR_HTML =
     "<hr style=\"height:2px;margin:1px;padding:0;border-width:0;" +
         "color:#dddddd;background-color:#dddddd\">"
 
-internal fun mergeMakerNote(
-    directories: List<TiffDirectory>,
-    makerNoteDirectory: TiffDirectory?
-): List<TiffDirectory> =
-    if (makerNoteDirectory != null)
-        directories + makerNoteDirectory
-    else
-        directories
-
 fun MediaMetadata.toExifHtmlString(): String =
     buildExifHtmlString(exif)
 
@@ -114,7 +105,18 @@ internal fun buildExifHtmlString(exif: TiffContents?): String =
         append("<th>Value</th>")
         append("</tr>")
 
-        val mergedDirectories = mergeMakerNote(exif.directories, exif.makerNoteDirectory)
+        val mergedDirectories: List<TiffDirectory> = buildList {
+
+            addAll(exif.directories)
+
+            val makerNotDirectory = exif.makerNoteDirectory
+
+            if (makerNotDirectory != null) {
+
+                add(makerNotDirectory)
+                addAll(exif.makerNoteSubDirectories)
+            }
+        }
 
         for (directory in mergedDirectories) {
 
@@ -583,10 +585,14 @@ internal fun createTiffSlices(
         )
     )
 
-    val mergedDirectories = mergeMakerNote(tiffContents.directories, tiffContents.makerNoteDirectory)
+    val mergedDirectories =
+        tiffContents.directories + listOfNotNull(tiffContents.makerNoteDirectory)
 
     for (directory in mergedDirectories)
         slices.addAll(createTiffDirectorySlices(directory, startPosition, exifBytes, tiffContents))
+
+    for (subDirectory in tiffContents.makerNoteSubDirectories)
+        slices.addAll(createMakerNoteSubDirectorySlices(subDirectory, startPosition))
 
     /* Find gaps and add them. */
     slices.addAll(createTiffGapSlices(slices, tiffHeaderEndPos, endPosition))
@@ -665,6 +671,66 @@ private fun createTiffDirectorySlices(
     return slices
 }
 
+/**
+ * Creates the HEX view slices of one MakerNote sub-directory.
+ *
+ * Sub-directories like the Canon blob tables store their fields at fixed
+ * byte positions instead of TIFF entries, so only the header and the
+ * field value ranges are highlighted, never twelve-byte entry rows.
+ */
+internal fun createMakerNoteSubDirectorySlices(
+    directory: TiffDirectory,
+    startPosition: Int
+): List<LabeledSlice> {
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    val directoryDescription = TiffDirectory.description(directory.type)
+
+    val directoryOffset = directory.offset + startPosition
+
+    slices.add(
+        LabeledSlice(
+            range = directoryOffset until directoryOffset + 2,
+            label = ("$directoryDescription [${directory.entries.size} entries]")
+                .escapeSpaces(),
+            separatorLineType = SeparatorLineType.THIN
+        )
+    )
+
+    var lastRange: IntRange? = null
+
+    for (field in directory.entries) {
+
+        if (field.valueBytes.isEmpty())
+            continue
+
+        val valueOffset = (field.valueOffset
+            ?: field.offset + TiffConstants.TIFF_ENTRY_VALUE_OFFSET) + startPosition
+
+        val valueRange = valueOffset until valueOffset + field.valueBytes.size
+
+        /* Skip ranges that repeat, for example the Apple RunTime fields. */
+        if (valueRange == lastRange)
+            continue
+
+        lastRange = valueRange
+
+        slices.add(
+            LabeledSlice(
+                range = valueRange,
+                label = ("$directoryDescription-${field.sortHint.toString().padStart(2, '0')} " +
+                    "${field.tagFormatted} " +
+                    "${field.tagInfo?.name ?: "Unknown"} value").escapeSpaces(),
+                separatorLineType = SeparatorLineType.NONE,
+                labelTooltip = field.valueDescription
+            )
+        )
+    }
+
+    return slices
+}
+
 private fun createTiffFieldSlices(
     field: TiffField,
     directoryDescription: String,
@@ -713,7 +779,20 @@ private fun createTiffFieldSlices(
             ExifTag.EXIF_TAG_MAKER_NOTE == field.tagInfo &&
                 tiffContents.makerNoteDirectory != null
 
-        if (skipMakerNoteValue)
+        val valueStart = valueOffset + startPosition
+
+        /*
+         * A value that Kim resolved into a MakerNote sub-directory is
+         * rendered by the sub-directory slices instead, so that the
+         * same bytes are never highlighted twice.
+         */
+        val skipMakerNoteSubDirectoryValue =
+            tiffContents.makerNoteSubDirectories.any { subDirectory ->
+                subDirectory.offset + startPosition in
+                    valueStart until valueStart + field.valueBytes.size
+            }
+
+        if (skipMakerNoteValue || skipMakerNoteSubDirectoryValue)
             return@let
 
         val isGeoTiffDirectory =
@@ -1089,11 +1168,7 @@ internal fun createItemInformationBoxSlices(iinfBox: ItemInformationBox): List<L
 
         infeBox as ItemInfoEntryBox
 
-        /*
-         * Workaround: Kim reports infe box offsets two bytes too early for iinf
-         * version 0, whose two-byte entry count is not accounted for.
-         */
-        val infeBoxOffset = infeBox.offset.toInt() + if (iinfBox.version == 0) 2 else 0
+        val infeBoxOffset = infeBox.offset.toInt()
 
         val subBoxRange =
             infeBoxOffset until infeBoxOffset + infeBox.actualLength.toInt()
@@ -1373,8 +1448,10 @@ private fun createGifSlices(bytes: ByteArray): List<LabeledSlice> {
 }
 
 /**
- * To prevent missing parts of the document this method
- * should check that nothing is missing or add it.
+ * Completes the document by filling the gaps between the slices with
+ * unknown-byte slices and clipping overlapping slices, so that every
+ * byte is shown exactly once and the position counter never jumps
+ * backwards.
  */
 private fun completeSlices(
     byteCount: Int,
@@ -1389,17 +1466,29 @@ private fun completeSlices(
 
         val lastSlice = completedSlices.lastOrNull()
 
-        val needToFillGap = lastSlice == null || clampedSlice.range.first - lastSlice.range.last > 1
+        val availableStart = lastSlice?.range?.last?.plus(1) ?: 0
+
+        /* Skip slices that the previous slice already covers completely. */
+        if (clampedSlice.range.last < availableStart)
+            continue
+
+        /* Clip overlapping slices so that positions never jump backwards. */
+        val adjustedSlice = if (clampedSlice.range.first < availableStart)
+            clampedSlice.copy(range = availableStart..clampedSlice.range.last)
+        else
+            clampedSlice
+
+        val needToFillGap = lastSlice == null || adjustedSlice.range.first - lastSlice.range.last > 1
 
         if (needToFillGap) {
 
             val gapStart = lastSlice?.range?.last?.plus(1) ?: 0
 
-            if (gapStart < clampedSlice.range.first) {
+            if (gapStart < adjustedSlice.range.first) {
 
                 completedSlices.add(
                     LabeledSlice(
-                        range = gapStart until clampedSlice.range.first,
+                        range = gapStart until adjustedSlice.range.first,
                         label = "[unknown]",
                         separatorLineType = SeparatorLineType.THIN
                     )
@@ -1407,7 +1496,7 @@ private fun completeSlices(
             }
         }
 
-        completedSlices.add(clampedSlice)
+        completedSlices.add(adjustedSlice)
     }
 
     val lastSlice = completedSlices.last()
