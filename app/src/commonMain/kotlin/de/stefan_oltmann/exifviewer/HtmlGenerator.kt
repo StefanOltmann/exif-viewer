@@ -319,7 +319,7 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
         val isExifSegment = marker == JpegConstants.JPEG_APP1_MARKER &&
             JpegConstants.EXIF_IDENTIFIER_CODE.contentEquals(
                 bytes.slice(
-                    startIndex = startPosition + 4,
+                    startIndex = startPosition.toInt() + 4,
                     count = JpegConstants.EXIF_IDENTIFIER_CODE.size
                 )
             )
@@ -327,14 +327,14 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
         if (isExifSegment) {
 
             val exifBytes = bytes.slice(
-                startIndex = startPosition + 4 + JpegConstants.EXIF_IDENTIFIER_CODE.size,
-                count = length - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
+                startIndex = startPosition.toInt() + 4 + JpegConstants.EXIF_IDENTIFIER_CODE.size,
+                count = length.toInt() - 4 - JpegConstants.EXIF_IDENTIFIER_CODE.size
             )
 
             /* APP1 Header */
             slices.add(
                 LabeledSlice(
-                    range = startPosition until startPosition + 4,
+                    range = startPosition.toInt() until startPosition.toInt() + 4,
                     label = JpegConstants.markerDescription(marker).escapeHtmlSpecialChars()
                         + SPACE + "[$length" + SPACE + "bytes]",
                     emphasisOnFirstBytes = 2
@@ -347,7 +347,7 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
             /* EXIF Identifier */
             slices.add(
                 LabeledSlice(
-                    range = exifHeaderStartPos until exifHeaderEndPos,
+                    range = exifHeaderStartPos.toInt() until exifHeaderEndPos.toInt(),
                     label = "EXIF" + SPACE + "Identifier",
                     separatorLineType = SeparatorLineType.THIN
                 )
@@ -356,8 +356,8 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
             slices.addAll(
                 createTiffSlices(
                     bytes = exifBytes,
-                    startPosition = exifHeaderEndPos,
-                    endPosition = endPosition,
+                    startPosition = exifHeaderEndPos.toInt(),
+                    endPosition = endPosition.toInt(),
                     exifBytes = true
                 )
             )
@@ -366,7 +366,7 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
 
             slices.add(
                 LabeledSlice(
-                    range = startPosition until endPosition,
+                    range = startPosition.toInt() until endPosition.toInt(),
                     label = JpegConstants.markerDescription(marker).escapeSpaces()
                         + SPACE + "[$length" + SPACE + "bytes]",
                     emphasisOnFirstBytes = 2,
