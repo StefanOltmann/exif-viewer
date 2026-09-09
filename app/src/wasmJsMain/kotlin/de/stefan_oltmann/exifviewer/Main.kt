@@ -161,6 +161,12 @@ private fun registerFileInputEvents() {
 
         val file = files[0]
 
+        /*
+         * Reset the value so selecting the same file again fires another
+         * change event.
+         */
+        target.value = ""
+
         if (file != null)
             handleFile(file)
     }
