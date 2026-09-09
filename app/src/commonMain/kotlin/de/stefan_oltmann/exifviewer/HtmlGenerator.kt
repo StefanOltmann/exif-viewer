@@ -983,7 +983,7 @@ internal fun createMetaBoxSlices(metaBox: MetaBox): List<LabeledSlice> {
         when {
 
             subBox is ItemLocationBox ->
-                slices.addAll(createItemLocationBoxSlices(subBox, metaBox))
+                slices.addAll(createItemLocationBoxSlices(subBox))
 
             subBox is ItemInformationBox ->
                 slices.addAll(createItemInformationBoxSlices(subBox))
@@ -1014,8 +1014,7 @@ internal fun createMetaBoxSlices(metaBox: MetaBox): List<LabeledSlice> {
 }
 
 internal fun createItemLocationBoxSlices(
-    ilocBox: ItemLocationBox,
-    metaBox: MetaBox
+    ilocBox: ItemLocationBox
 ): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
@@ -1100,9 +1099,13 @@ internal fun createItemLocationBoxSlices(
 
     // TODO Decode the rest of the box
 
+    /*
+     * The data region ends at the end of the iloc box and not at the end
+     * of the meta box, so slices of later sibling boxes stay untouched.
+     */
     slices.add(
         LabeledSlice(
-            range = dataStartOffset until ilocBox.offset.toInt() + metaBox.actualLength.toInt(),
+            range = dataStartOffset until ilocBox.offset.toInt() + 8 + ilocBox.payload.size,
             label = "data",
             separatorLineType = SeparatorLineType.NONE,
             snipAfterLineCount = 3

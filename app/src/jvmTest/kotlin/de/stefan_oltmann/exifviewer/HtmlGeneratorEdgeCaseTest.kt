@@ -298,7 +298,25 @@ class HtmlGeneratorEdgeCaseTest {
     @Test
     fun testItemLocationSlicesForVersion2() {
 
-        val metaBox = metaBoxWithHdlr()
+        val itemLocationBox = ItemLocationBox(
+            offset = 0,
+            size = 0,
+            largeSize = null,
+            payload = byteArrayOf(2, 0, 0, 0, 0x44.toByte(), 0x00) +
+                u32(value = 0)
+        )
+
+        val slices = createItemLocationBoxSlices(itemLocationBox)
+
+        assertTrue(slices.any { it.label.contains("Item&nbsp;count&nbsp;=&nbsp;0") })
+    }
+
+    /**
+     * Verifies that the iloc data region ends at the end of the iloc box
+     * and does not swallow the slices of later meta box children.
+     */
+    @Test
+    fun testItemLocationDataSliceStaysWithinIlocBox() {
 
         val itemLocationBox = ItemLocationBox(
             offset = 0,
@@ -308,12 +326,16 @@ class HtmlGeneratorEdgeCaseTest {
                 u32(value = 0)
         )
 
-        val slices = createItemLocationBoxSlices(
-            itemLocationBox,
-            metaBox
-        )
+        val slices = createItemLocationBoxSlices(itemLocationBox)
 
-        assertTrue(slices.any { it.label.contains("Item&nbsp;count&nbsp;=&nbsp;0") })
+        val ilocBoxLength = 8 + itemLocationBox.payload.size
+
+        assertTrue(
+            slices
+                .filter { it.label == "data" }
+                .all { it.range.isEmpty() || it.range.last < ilocBoxLength },
+            "The iloc data slice reaches beyond the iloc box"
+        )
     }
 
     /**
@@ -769,17 +791,6 @@ private fun hdlrBox(): ByteArray =
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0
         )
-    )
-
-/**
- * Builds a meta box that contains a single handler reference box.
- */
-private fun metaBoxWithHdlr(): MetaBox =
-    MetaBox(
-        offset = 0,
-        size = 0,
-        largeSize = null,
-        payload = byteArrayOf(0, 0, 0, 0) + hdlrBox()
     )
 
 /**
