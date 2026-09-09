@@ -22,6 +22,11 @@ package de.stefan_oltmann.exifviewer
 /**
  * Describes a range of bytes of the file that should be displayed
  * together in the HEX view, together with its label and appearance.
+ *
+ * [snipAfterLineCount] limits how many lines of the slice are printed
+ * before a snip marker is shown. [Int.MAX_VALUE] never snips and is only
+ * safe for slices whose size does not grow with the file size, so slices
+ * that can become large must set an explicit bounded value.
  */
 data class LabeledSlice(
     val range: IntRange,

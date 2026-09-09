@@ -722,6 +722,7 @@ internal fun createMakerNoteSubDirectorySlices(
                 label = ("$directoryDescription-${field.sortHint.toString().padStart(2, '0')} " +
                     "${field.tagFormatted} " +
                     "${field.tagInfo?.name ?: "Unknown"} value").escapeSpaces(),
+                snipAfterLineCount = 1,
                 separatorLineType = SeparatorLineType.NONE,
                 labelTooltip = field.valueDescription
             )
@@ -843,6 +844,7 @@ private fun createTiffFieldSlices(
                 LabeledSlice(
                     range = adjValueOffset + 8 until adjValueOffset + field.valueBytes.size,
                     label = "GeoTiff" + SPACE + "values",
+                    snipAfterLineCount = 1,
                     separatorLineType = SeparatorLineType.NONE,
                     highlightId = highlightId
                 )
@@ -1490,6 +1492,7 @@ private fun completeSlices(
                     LabeledSlice(
                         range = gapStart until adjustedSlice.range.first,
                         label = "[unknown]",
+                        snipAfterLineCount = 1,
                         separatorLineType = SeparatorLineType.THIN
                     )
                 )
@@ -1509,6 +1512,7 @@ private fun completeSlices(
             LabeledSlice(
                 range = lastSlice.range.last + 1 until byteCount,
                 label = "[unknown]",
+                snipAfterLineCount = 1,
                 separatorLineType = SeparatorLineType.THIN
             )
         )
@@ -1587,14 +1591,24 @@ private fun StringBuilder.appendSliceHtml(
  * Appends the snip message line when the printed byte limit of the slice is
  * reached and returns the position of the first byte of the next line.
  */
-private fun StringBuilder.nextPositionAfterSnip(
+internal fun StringBuilder.nextPositionAfterSnip(
     slice: LabeledSlice,
     lineEnd: Int,
     positionLength: Int
 ): Int {
 
-    val printedBytesCount = lineEnd - slice.range.first + 1
-    val maxBytesToPrint = slice.snipAfterLineCount * BYTES_PER_ROW
+    val printedBytesCount = (lineEnd - slice.range.first + 1).toLong()
+
+    /*
+     * The limit is computed in Long so that a high line count can never
+     * overflow into a negative limit, which would snip slices that should
+     * be printed completely.
+     */
+    val maxBytesToPrint =
+        if (slice.snipAfterLineCount == Int.MAX_VALUE)
+            Long.MAX_VALUE
+        else
+            slice.snipAfterLineCount.toLong() * BYTES_PER_ROW
 
     val lastLineStart = slice.range.last - BYTES_PER_ROW + 1
     val byteCountToSkip = lastLineStart - lineEnd - 1

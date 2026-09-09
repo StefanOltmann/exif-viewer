@@ -38,6 +38,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.readBytes
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -62,6 +63,48 @@ class HtmlGeneratorEdgeCaseTest {
         assertTrue(positionCounterLength(byteCount = 99_999_999) == 8)
         assertTrue(positionCounterLength(byteCount = 100_000_000) == 8)
         assertTrue(positionCounterLength(byteCount = 100_000_001) == 9)
+    }
+
+    /**
+     * Verifies that the default snip count never snips instead of
+     * producing a negative limit through integer overflow.
+     */
+    @Test
+    fun testDefaultSnipCountNeverSnips() {
+
+        val slice = LabeledSlice(range = 0 until 200, label = "x")
+
+        val builder = StringBuilder()
+
+        val nextPosition = builder.nextPositionAfterSnip(
+            slice = slice,
+            lineEnd = 15,
+            positionLength = 8
+        )
+
+        assertEquals(16, nextPosition)
+        assertFalse(builder.contains("snip"))
+    }
+
+    /**
+     * Verifies that an explicit snip count still snips to the last line
+     * once the printed byte limit is reached.
+     */
+    @Test
+    fun testExplicitSnipCountStillSnips() {
+
+        val slice = LabeledSlice(range = 0 until 200, label = "x", snipAfterLineCount = 1)
+
+        val builder = StringBuilder()
+
+        val nextPosition = builder.nextPositionAfterSnip(
+            slice = slice,
+            lineEnd = 15,
+            positionLength = 8
+        )
+
+        assertEquals(184, nextPosition)
+        assertTrue(builder.contains("snip"))
     }
 
     /**
