@@ -57,6 +57,8 @@
             font-size: 1em;
         }
 
+        /* Inline chevron icon. No external icon font is loaded, because
+           this page must not send requests to third parties. */
         .expand-icon {
             font-size: 1.2em;
             margin-right: .5em;
@@ -150,7 +152,7 @@
 <div id="thumbnail-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('thumbnail-box')">
         Embedded Thumbnail
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="thumbnail-content">
         <img id="thumbnail" alt="">
@@ -160,7 +162,7 @@
 <div id="exif-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('exif-box')">
         EXIF
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="exif"></div>
 </div>
@@ -168,7 +170,7 @@
 <div id="iptc-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('iptc-box')">
         IPTC
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="iptc"></div>
 </div>
@@ -176,7 +178,7 @@
 <div id="xmp-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('xmp-box')">
         XMP
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="xmp"></div>
 </div>
@@ -184,7 +186,7 @@
 <div id="text-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('text-box')">
         PNG text chunks
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="text"></div>
 </div>
@@ -192,7 +194,7 @@
 <div id="geotiff-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('geotiff-box')">
         GeoTiff
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="geotiff"></div>
 </div>
@@ -200,7 +202,7 @@
 <div id="hex-box" class="box">
     <div class="box-title" onclick="toggleBoxContent('hex-box')">
         File structure (HEX view)
-        <i class="fas fa-chevron-down expand-icon"></i>
+        <svg class="expand-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7 7 7-7"/></svg>
     </div>
     <div class="box-content" id="hex"></div>
 </div>
