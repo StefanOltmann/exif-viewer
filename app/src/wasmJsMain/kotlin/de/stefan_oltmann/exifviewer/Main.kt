@@ -249,7 +249,7 @@ private fun processFile(uint8Array: Uint8Array) {
 
         } catch (ex: Exception) {
 
-            updateHtml(hexElement, "Failed to generate HEX view: ${ex.message}")
+            updateHtml(hexElement, errorMessage("Failed to generate HEX view: ", ex))
         }
 
         val orientation: TiffOrientation = TiffOrientation.of(
@@ -317,7 +317,7 @@ private fun processFile(uint8Array: Uint8Array) {
 
     } catch (ex: Exception) {
 
-        updateAll("Parsing error: ${ex.message}")
+        updateAll(errorMessage("Parsing error: ", ex))
         updateThumbnail(null, TiffOrientation.STANDARD)
 
         /*
@@ -327,6 +327,13 @@ private fun processFile(uint8Array: Uint8Array) {
         makeAllRegularBoxesVisible()
     }
 }
+
+/**
+ * Builds a user-facing error message that falls back to the exception
+ * itself when it carries no message, so users never see a bare "null".
+ */
+private fun errorMessage(prefix: String, ex: Exception): String =
+    prefix + (ex.message ?: ex.toString())
 
 /**
  * Adds mouseover listeners to the spans in the HEX view HTML.
