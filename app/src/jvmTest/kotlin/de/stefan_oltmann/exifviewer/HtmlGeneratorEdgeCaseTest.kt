@@ -455,6 +455,45 @@ class HtmlGeneratorEdgeCaseTest {
     }
 
     /**
+     * Verifies that the EXIF slices of an mdat extent cover the final
+     * metadata byte instead of leaving it to the unknown-byte filler.
+     */
+    @Test
+    fun testMdatExifSlicesCoverFinalByte() {
+
+        val payload = byteArrayOf(0, 0, 0, 0) +
+            "Exif".encodeToByteArray() + byteArrayOf(0, 0) +
+            tiffWithUnknownTag() +
+            ByteArray(4)
+
+        val mdatBox = MediaDataBox(
+            offset = 0,
+            size = 0,
+            largeSize = null,
+            payload = payload
+        )
+
+        val metadataOffsets = listOf(
+            MetadataOffset(
+                type = MetadataType.EXIF,
+                offset = 0,
+                length = payload.size.toLong()
+            )
+        )
+
+        val slices = createMdatSlices(
+            mdatBox,
+            metadataOffsets,
+            payload
+        )
+
+        assertTrue(
+            slices.any { it.range.last == payload.size - 1 },
+            "The final EXIF byte of the mdat extent is not covered"
+        )
+    }
+
+    /**
      * Verifies that an exif box at offset zero renders its TIFF payload.
      */
     @Test

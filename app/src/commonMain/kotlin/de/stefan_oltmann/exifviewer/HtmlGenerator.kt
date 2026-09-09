@@ -1239,13 +1239,19 @@ internal fun createMdatSlices(
                 )
             )
 
-            val exifRange = metadataRange.first + 10 until metadataRange.last
+            /*
+             * The EXIF payload starts after the four leading bytes and
+             * the six-byte EXIF identifier and reaches to the end of the
+             * metadata extent, so the final bytes are part of the TIFF
+             * slices instead of being filled in as unknown bytes.
+             */
+            val exifRange = metadataRange.first + 10 until metadataRange.last + 1
 
             slices.addAll(
                 createTiffSlices(
                     bytes = bytes.sliceArray(exifRange),
                     startPosition = exifRange.first,
-                    endPosition = exifRange.last,
+                    endPosition = metadataRange.last + 1,
                     exifBytes = true
                 )
             )
