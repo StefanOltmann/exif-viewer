@@ -205,7 +205,28 @@ private fun handleFile(file: File) {
         }
     }
 
+    fileReader.onerror = { _ ->
+        showFileReadError()
+    }
+
+    fileReader.onabort = { _ ->
+        showFileReadError()
+    }
+
     fileReader.readAsArrayBuffer(file)
+}
+
+/**
+ * Shows the error state when the selected file could not be read, so the
+ * user is not left with the results of the previously analyzed file.
+ */
+private fun showFileReadError() {
+
+    updateAll("Error reading file.")
+
+    updateThumbnail(null, TiffOrientation.STANDARD)
+
+    makeAllRegularBoxesVisible()
 }
 
 private fun processFile(uint8Array: Uint8Array) {
