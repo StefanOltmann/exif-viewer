@@ -399,16 +399,7 @@ private fun updateThumbnail(imageBytes: ByteArray?, orientation: TiffOrientation
          * If the user saves the image to disk it should still be identical to
          * the output of "exiftool -b -ThumbnailImage test.jpg > thumb.jpg".
          */
-        val styleTransform = when (orientation) {
-            TiffOrientation.MIRROR_HORIZONTAL -> "scale(-1, 1)"
-            TiffOrientation.UPSIDE_DOWN -> "rotate(180deg)"
-            TiffOrientation.MIRROR_VERTICAL -> "scale(1, -1)"
-            TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_LEFT -> "rotate(-90deg) scale(1, -1)"
-            TiffOrientation.ROTATE_RIGHT -> "rotate(90deg)"
-            TiffOrientation.MIRROR_HORIZONTAL_AND_ROTATE_RIGHT -> "rotate(90deg) scale(1, -1)"
-            TiffOrientation.ROTATE_LEFT -> "rotate(-90deg)"
-            else -> ""
-        }
+        val styleTransform = thumbnailCssTransform(orientation)
 
         thumbnailElement.style.transform = styleTransform
 
