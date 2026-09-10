@@ -925,9 +925,8 @@ private fun createTiffGapSlices(
 
 private fun createBaseMediaFileFormatSlices(bytes: ByteArray): List<LabeledSlice> {
 
-    val boxes = BoxReader.readBoxes(
+    val boxes = BoxReader.readAllBoxes(
         byteReader = ByteArrayByteReader(bytes),
-        stopAfterMetadataRead = false,
         offsetShift = 0
     )
 
