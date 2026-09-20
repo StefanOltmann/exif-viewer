@@ -304,4 +304,44 @@ class HtmlGeneratorTest {
             fail("HTML photo_9_hex.html differs.")
         }
     }
+
+    @Test
+    fun testGenerateHexHtmlRaf() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_10.raf").readBytes()
+
+        val actualHtml = generateHexHtml(imageBytes)
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_10_hex.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_10_hex.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_10_hex.html differs.")
+        }
+    }
+
+    @Test
+    fun testGenerateHexHtmlCr3() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_11.cr3").readBytes()
+
+        val actualHtml = generateHexHtml(imageBytes)
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_11_hex.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_11_hex.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_11_hex.html differs.")
+        }
+    }
 }

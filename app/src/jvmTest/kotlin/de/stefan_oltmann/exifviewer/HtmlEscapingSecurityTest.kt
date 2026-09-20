@@ -71,6 +71,20 @@ class HtmlEscapingSecurityTest {
         assertTrue(actualHtml.contains("&lt;script&gt;alert(1)&lt;/script&gt;"))
         assertFalse(actualHtml.contains("<script>"))
     }
+
+    /**
+     * Verifies that the HEX view escapes the RAF version bytes, which come
+     * straight from an untrusted file, before they enter the DOM through
+     * innerHTML.
+     */
+    @Test
+    fun testHexViewEscapesXssRafVersion() {
+
+        val actualHtml = generateHexHtml(rafWithXssVersion())
+
+        assertTrue(actualHtml.contains("&lt;&quot;a&amp;"))
+        assertFalse(actualHtml.contains("<\"a&"))
+    }
 }
 
 /**
@@ -93,3 +107,53 @@ private fun tiffWithXssValue(): ByteArray {
         0, 0, 0, 0
     ) + value
 }
+
+/**
+ * Builds a minimal RAF whose four version bytes contain characters that
+ * are special to HTML. The directory table points at a smallest possible
+ * valid embedded JPEG, so the HEX view renders the header it is built
+ * from.
+ */
+private fun rafWithXssVersion(): ByteArray {
+
+    val bytes = ByteArray(RAF_HEADER_LENGTH) { '0'.code.toByte() }
+
+    "FUJIFILMCCD-RAW ".encodeToByteArray().copyInto(bytes)
+
+    /* The version field is four bytes long. */
+    "<\"a&".encodeToByteArray().copyInto(bytes, destinationOffset = 16)
+
+    /* SOI, SOS with one component, two scan bytes, EOI. */
+    val jpegBytes = byteArrayOf(
+        0xFF.toByte(), 0xD8.toByte(),
+        0xFF.toByte(), 0xDA.toByte(),
+        0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0xFF.toByte(), 0xD9.toByte()
+    )
+
+    fun u32At(offset: Int, value: Int) {
+
+        bytes[offset] = (value ushr 24).toByte()
+        bytes[offset + 1] = (value ushr 16).toByte()
+        bytes[offset + 2] = (value ushr 8).toByte()
+        bytes[offset + 3] = value.toByte()
+    }
+
+    val jpegOffset = RAF_HEADER_LENGTH
+    val cfaHeaderOffset = jpegOffset + jpegBytes.size
+
+    u32At(84, jpegOffset)
+    u32At(88, jpegBytes.size)
+    u32At(92, cfaHeaderOffset)
+    u32At(96, 1)
+    u32At(100, cfaHeaderOffset + 1)
+    u32At(104, 1)
+
+    return bytes + jpegBytes + byteArrayOf(
+        0, /* CFA header */
+        0  /* CFA data */
+    )
+}
+
+private const val RAF_HEADER_LENGTH = 108

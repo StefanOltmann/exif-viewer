@@ -31,6 +31,9 @@ import de.stefan_oltmann.kim.format.bmff.box.ItemInformationBox
 import de.stefan_oltmann.kim.format.bmff.box.ItemLocationBox
 import de.stefan_oltmann.kim.format.bmff.box.MetaBox
 import de.stefan_oltmann.kim.format.bmff.box.MetaBoxTopLevel
+import de.stefan_oltmann.kim.format.bmff.box.MovieBox
+import de.stefan_oltmann.kim.format.bmff.box.UuidBox
+import de.stefan_oltmann.kim.format.cr3.Cr3Reader
 import de.stefan_oltmann.kim.format.gif.GifChunkType
 import de.stefan_oltmann.kim.format.gif.GifImageParser
 import de.stefan_oltmann.kim.format.jpeg.JpegConstants
@@ -40,6 +43,7 @@ import de.stefan_oltmann.kim.format.jxl.box.ExifBox
 import de.stefan_oltmann.kim.format.png.PngChunkType
 import de.stefan_oltmann.kim.format.png.PngConstants
 import de.stefan_oltmann.kim.format.png.PngImageParser
+import de.stefan_oltmann.kim.format.raf.RafImageParser
 import de.stefan_oltmann.kim.format.tiff.TiffContents
 import de.stefan_oltmann.kim.format.tiff.TiffDirectory
 import de.stefan_oltmann.kim.format.tiff.TiffField
@@ -71,6 +75,19 @@ private const val ROW_CHAR_LENGTH: Int = BYTES_PER_ROW * CHARS_PER_BYTE
 private const val SHOW_HTML_OFFSETS_AS_HEX: Boolean = false
 
 private const val PNG_CRC_BYTES_LENGTH = 4
+
+/* The RAF header: signature, version, unknown bytes, then the directory. */
+private const val RAF_SIGNATURE_LENGTH = 16
+
+private const val RAF_DIRECTORY_START_POS = 84
+
+private const val RAF_DIRECTORY_ENTRY_LENGTH = 4
+
+/* A BMFF box header is 4 length bytes plus 4 type bytes. */
+private const val BMFF_BOX_HEADER_LENGTH = 8
+
+/* A uuid box header: the box header plus the 16 UUID bytes. */
+private const val CR3_UUID_BOX_HEADER_LENGTH = 24
 
 /* Number of spaces between the separators of the snip message line. */
 private const val SNIP_LINE_SEPARATOR_SPACES = 18
@@ -288,6 +305,12 @@ fun generateHexHtml(bytes: ByteArray): String {
         MediaFormat.PNG ->
             generateHtmlFromSlices(bytes, createPngSlices(bytes))
 
+        MediaFormat.RAF ->
+            generateHtmlFromSlices(bytes, createRafSlices(bytes))
+
+        MediaFormat.CR3 ->
+            generateHtmlFromSlices(bytes, createCr3Slices(bytes))
+
         MediaFormat.WEBP ->
             generateHtmlFromSlices(bytes, createWebPSlices(bytes))
 
@@ -303,7 +326,14 @@ fun generateHexHtml(bytes: ByteArray): String {
     }
 }
 
-private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
+/**
+ * Builds the slices of a JPEG structure. The JPEG can be embedded in a
+ * container like RAF, so all ranges are shifted by [startOffset].
+ */
+private fun createJpegSlices(
+    bytes: ByteArray,
+    startOffset: Int = 0
+): List<LabeledSlice> {
 
     val segmentInfos = JpegSegmentAnalyzer.findSegmentInfos(ByteArrayByteReader(bytes))
 
@@ -389,6 +419,121 @@ private fun createJpegSlices(bytes: ByteArray): List<LabeledSlice> {
             )
         }
     }
+
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    return if (startOffset == 0)
+        slices
+    else
+        slices.map { it.shiftedBy(startOffset) }
+}
+
+/**
+ * Returns the slice with its range moved by the given offset, so slices
+ * of an embedded structure land at their position inside the file.
+ */
+private fun LabeledSlice.shiftedBy(offset: Int): LabeledSlice =
+    copy(range = (range.first + offset)..(range.last + offset))
+
+/**
+ * Builds the slices of a Fuji RAF file from its section directory: the
+ * header, the directory table, the embedded JPEG that carries the
+ * metadata, the CFA header and the CFA raw data block.
+ */
+private fun createRafSlices(bytes: ByteArray): List<LabeledSlice> {
+
+    val directory = RafImageParser.readDirectory(ByteArrayByteReader(bytes))
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    slices.add(
+        LabeledSlice(
+            range = 0 until RAF_SIGNATURE_LENGTH,
+            label = "FUJIFILMCCD-RAW${SPACE}signature",
+            separatorLineType = SeparatorLineType.NONE
+        )
+    )
+
+    val versionEndPos = RAF_SIGNATURE_LENGTH + RAF_DIRECTORY_ENTRY_LENGTH
+
+    slices.add(
+        LabeledSlice(
+            range = RAF_SIGNATURE_LENGTH until versionEndPos,
+            label = ("RAF version " + bytes
+                .slice(RAF_SIGNATURE_LENGTH, RAF_DIRECTORY_ENTRY_LENGTH)
+                .decodeToString()).escapeHtmlSpecialChars(),
+            separatorLineType = SeparatorLineType.NONE
+        )
+    )
+
+    slices.add(
+        LabeledSlice(
+            range = versionEndPos until RAF_DIRECTORY_START_POS,
+            label = "[unknown${SPACE}${RAF_DIRECTORY_START_POS - versionEndPos}${SPACE}bytes]",
+            snipAfterLineCount = 3,
+            separatorLineType = SeparatorLineType.NONE
+        )
+    )
+
+    val directoryEntries = listOf(
+        "JPEG image offset" to directory.jpegImageOffset,
+        "JPEG image length" to directory.jpegImageLength,
+        "CFA header offset" to directory.cfaHeaderOffset,
+        "CFA header length" to directory.cfaHeaderLength,
+        "CFA data offset" to directory.cfaOffset,
+        "CFA data length" to directory.cfaLength
+    )
+
+    for (indexedEntry in directoryEntries.withIndex()) {
+
+        val (label, value) = indexedEntry.value
+
+        val entryStartPos =
+            RAF_DIRECTORY_START_POS + indexedEntry.index * RAF_DIRECTORY_ENTRY_LENGTH
+
+        slices.add(
+            LabeledSlice(
+                range = entryStartPos until entryStartPos + RAF_DIRECTORY_ENTRY_LENGTH,
+                label = "$label$SPACE=$SPACE$value",
+                separatorLineType = SeparatorLineType.NONE
+            )
+        )
+    }
+
+    slices.addAll(
+        createJpegSlices(
+            bytes = bytes.slice(
+                startIndex = directory.jpegImageOffset.toInt(),
+                count = directory.jpegImageLength.toInt()
+            ),
+            startOffset = directory.jpegImageOffset.toInt()
+        )
+    )
+
+    val cfaHeaderEndPos = (directory.cfaHeaderOffset + directory.cfaHeaderLength).toInt()
+
+    slices.add(
+        LabeledSlice(
+            range = directory.cfaHeaderOffset.toInt() until cfaHeaderEndPos,
+            label = "CFA header (RAF directory) [${directory.cfaHeaderLength}${SPACE}bytes]"
+                .escapeSpaces(),
+            snipAfterLineCount = 3,
+            separatorLineType = SeparatorLineType.BOLD
+        )
+    )
+
+    val cfaEndPos = (directory.cfaOffset + directory.cfaLength).toInt()
+
+    slices.add(
+        LabeledSlice(
+            range = directory.cfaOffset.toInt() until cfaEndPos,
+            label = "CFA data (FujiIFD) [${directory.cfaLength}${SPACE}bytes]"
+                .escapeSpaces(),
+            snipAfterLineCount = 1,
+            separatorLineType = SeparatorLineType.BOLD
+        )
+    )
 
     /* For safety sort in offset order. */
     slices.sortBy { it.range.first }
@@ -518,7 +663,7 @@ private fun createWebPSlices(bytes: ByteArray): List<LabeledSlice> {
             )
         )
 
-        val dataOffset = startPosition + WebPConstants.TPYE_LENGTH + WebPConstants.CHUNK_SIZE_LENGTH
+        val dataOffset = startPosition + WebPConstants.TYPE_LENGTH + WebPConstants.CHUNK_SIZE_LENGTH
 
         /*
          * WebP chunk lengths must be an even number
@@ -564,12 +709,16 @@ internal fun createTiffSlices(
     bytes: ByteArray,
     startPosition: Int = 0,
     endPosition: Int = bytes.size,
-    exifBytes: Boolean = true
+    exifBytes: Boolean = true,
+    directoryType: Int = TiffConstants.TIFF_DIRECTORY_TYPE_IFD0
 ): List<LabeledSlice> {
 
     val slices = mutableListOf<LabeledSlice>()
 
-    val tiffContents = TiffReader.read(bytes)
+    val tiffContents = TiffReader.read(
+        exifBytes = bytes,
+        directoryType = directoryType
+    )
 
     val tiffHeader = tiffContents.header
 
@@ -1323,6 +1472,186 @@ private fun createGenericBoxSlice(box: Box): LabeledSlice {
         else
             SeparatorLineType.NONE,
         snipAfterLineCount = 3
+    )
+}
+
+/**
+ * Builds the slices of a Canon CR3 file: the boxes of the ISO base media
+ * file format it is based on, with the TIFF structures of the CMT boxes
+ * resolved into directory and field slices.
+ */
+private fun createCr3Slices(bytes: ByteArray): List<LabeledSlice> {
+
+    val boxes = BoxReader.readAllBoxes(
+        byteReader = ByteArrayByteReader(bytes),
+        offsetShift = 0
+    )
+
+    val metadataSubBoxes = Cr3Reader.findMetadataSubBoxes(boxes)
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    for (box in boxes) {
+
+        when {
+
+            box is MovieBox ->
+                slices.addAll(createCr3MovieBoxSlices(box, metadataSubBoxes))
+
+            box is UuidBox ->
+                slices.add(createCr3UuidBoxSlice(box))
+
+            else ->
+                slices.add(createGenericBoxSlice(box))
+        }
+    }
+
+    /* For safety sort in offset order. */
+    slices.sortBy { it.range.first }
+
+    return slices
+}
+
+/**
+ * Builds the slices of the "moov" box: its header plus its sub-boxes,
+ * with the EXIF metadata UUID box resolved into its CMT sub-boxes.
+ */
+private fun createCr3MovieBoxSlices(
+    moovBox: MovieBox,
+    metadataSubBoxes: List<Box>
+): List<LabeledSlice> {
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    slices.add(
+        LabeledSlice(
+            range = moovBox.offset.toInt() until moovBox.offset.toInt() + BMFF_BOX_HEADER_LENGTH,
+            label = "Box moov header",
+            separatorLineType = SeparatorLineType.BOLD,
+            snipAfterLineCount = 1
+        )
+    )
+
+    for (subBox in moovBox.boxes) {
+
+        when {
+
+            subBox is UuidBox && subBox.uuidAsHex == Cr3Reader.CR3_EXIF_UUID ->
+                slices.addAll(createCr3ExifUuidBoxSlices(subBox, metadataSubBoxes))
+
+            subBox is UuidBox ->
+                slices.add(createCr3UuidBoxSlice(subBox))
+
+            else ->
+                slices.add(createGenericBoxSlice(subBox))
+        }
+    }
+
+    return slices
+}
+
+/**
+ * Builds the slices of the EXIF metadata UUID box: its header plus the
+ * metadata sub-boxes it contains.
+ */
+private fun createCr3ExifUuidBoxSlices(
+    exifUuidBox: UuidBox,
+    metadataSubBoxes: List<Box>
+): List<LabeledSlice> {
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    slices.add(
+        LabeledSlice(
+            range = exifUuidBox.offset.toInt() until
+                exifUuidBox.offset.toInt() + CR3_UUID_BOX_HEADER_LENGTH,
+            label = "Box uuid header (EXIF metadata)".escapeSpaces(),
+            separatorLineType = SeparatorLineType.THIN,
+            snipAfterLineCount = 2
+        )
+    )
+
+    for (subBox in metadataSubBoxes) {
+
+        val directoryType = when (subBox.type) {
+            BoxType.CMT1 -> TiffConstants.TIFF_DIRECTORY_TYPE_IFD0
+            BoxType.CMT2 -> TiffConstants.TIFF_DIRECTORY_EXIF
+            BoxType.CMT3 -> TiffConstants.TIFF_MAKER_NOTE_CANON
+            BoxType.CMT4 -> TiffConstants.TIFF_DIRECTORY_GPS
+            else -> null
+        }
+
+        if (directoryType == null) {
+            slices.add(createGenericBoxSlice(subBox))
+        } else {
+            slices.addAll(
+                createCr3CmtBoxSlices(
+                    cmtBox = subBox,
+                    directoryType = directoryType
+                )
+            )
+        }
+    }
+
+    return slices
+}
+
+/**
+ * Builds the slices of a CMT box: its header plus the TIFF structure of
+ * its payload, resolved into directory and field slices.
+ */
+private fun createCr3CmtBoxSlices(
+    cmtBox: Box,
+    directoryType: Int
+): List<LabeledSlice> {
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    val boxOffset = cmtBox.offset.toInt()
+
+    val boxEndPos = boxOffset + cmtBox.actualLength.toInt()
+
+    slices.add(
+        LabeledSlice(
+            range = boxOffset until boxOffset + BMFF_BOX_HEADER_LENGTH,
+            label = "Box" + SPACE + cmtBox.type + SPACE + "header",
+            separatorLineType = SeparatorLineType.THIN,
+            snipAfterLineCount = 1
+        )
+    )
+
+    slices.addAll(
+        createTiffSlices(
+            bytes = cmtBox.payload,
+            startPosition = boxOffset + BMFF_BOX_HEADER_LENGTH,
+            endPosition = boxEndPos,
+            exifBytes = true,
+            directoryType = directoryType
+        )
+    )
+
+    return slices
+}
+
+/**
+ * Builds the slice of a UUID box that is not the EXIF metadata box, so
+ * its purpose is named when the UUID is a known one.
+ */
+private fun createCr3UuidBoxSlice(uuidBox: UuidBox): LabeledSlice {
+
+    val purpose = when (uuidBox.uuidAsHex) {
+        Cr3Reader.CR3_XMP_UUID -> "(XMP)"
+        Cr3Reader.CR3_PREVIEW_UUID -> "(preview JPEG)"
+        else -> ""
+    }
+
+    val isXmp = uuidBox.uuidAsHex == Cr3Reader.CR3_XMP_UUID
+
+    return LabeledSlice(
+        range = uuidBox.offset.toInt() until uuidBox.offset.toInt() + uuidBox.actualLength.toInt(),
+        label = ("Box uuid" + purpose + " [" + uuidBox.actualLength + " bytes]").escapeSpaces(),
+        separatorLineType = SeparatorLineType.BOLD,
+        snipAfterLineCount = if (isXmp) 5 else 1
     )
 }
 

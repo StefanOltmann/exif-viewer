@@ -26,6 +26,7 @@ import de.stefan_oltmann.kim.format.bmff.box.ItemInformationBox
 import de.stefan_oltmann.kim.format.bmff.box.ItemLocationBox
 import de.stefan_oltmann.kim.format.bmff.box.MediaDataBox
 import de.stefan_oltmann.kim.format.bmff.box.MetaBox
+import de.stefan_oltmann.kim.format.cr3.Cr3Reader
 import de.stefan_oltmann.kim.format.jpeg.iptc.IptcMetadata
 import de.stefan_oltmann.kim.format.jxl.box.ExifBox
 import de.stefan_oltmann.kim.format.tiff.TiffReader
@@ -736,6 +737,46 @@ class HtmlGeneratorEdgeCaseTest {
 
         assertTrue(actualHtml.contains("mdat"))
     }
+
+    /**
+     * Verifies that the UUID boxes a CR3 can contain are named by their
+     * purpose when the UUID is a known one, both at the top level and
+     * nested inside the moov box.
+     */
+    @Test
+    fun testGenerateHexHtmlCr3WithUuidBoxes() {
+
+        val ftypBox = box(
+            type = "ftyp",
+            payload = "crx ".encodeToByteArray() + u32(value = 0) + "isom".encodeToByteArray()
+        )
+
+        val xmpUuidBox = box(
+            type = "uuid",
+            payload = uuidBytes(Cr3Reader.CR3_XMP_UUID) +
+                "<x:xmpmeta/>".encodeToByteArray()
+        )
+
+        val previewUuidBox = box(
+            type = "uuid",
+            payload = uuidBytes(Cr3Reader.CR3_PREVIEW_UUID) + ByteArray(2)
+        )
+
+        val unknownUuidBox = box(
+            type = "uuid",
+            payload = uuidBytes("00112233445566778899aabbccddeeff") + ByteArray(2)
+        )
+
+        val moovBox = box(type = "moov", payload = unknownUuidBox)
+
+        val actualHtml = generateHexHtml(ftypBox + xmpUuidBox + previewUuidBox + moovBox)
+
+        assertTrue(actualHtml.contains("(XMP)"))
+
+        assertTrue(actualHtml.contains("(preview&nbsp;JPEG)"))
+
+        assertTrue(actualHtml.contains("Box&nbsp;uuid&nbsp;["))
+    }
 }
 
 /**
@@ -777,6 +818,14 @@ private fun u32(value: Int): ByteArray =
  */
 private fun box(type: String, payload: ByteArray): ByteArray =
     u32(8 + payload.size) + type.encodeToByteArray() + payload
+
+/**
+ * Builds the 16 UUID bytes of a lowercase hex string.
+ */
+private fun uuidBytes(hexString: String): ByteArray =
+    ByteArray(hexString.length / 2) { index ->
+        hexString.substring(index * 2, index * 2 + 2).toInt(16).toByte()
+    }
 
 /**
  * Builds a handler reference box for the picture namespace.
