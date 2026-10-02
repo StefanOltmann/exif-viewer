@@ -1,0 +1,21 @@
+name: Cleanup
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  prune-old-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: yanovian/prune-old-actions@4976108ec60d9053e8d318206a43706f7d0cf781
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          days-ago: 3
+          keep-latest: 1
