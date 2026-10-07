@@ -27,6 +27,7 @@ import de.stefan_oltmann.kim.format.bmff.box.ItemLocationBox
 import de.stefan_oltmann.kim.format.bmff.box.MediaDataBox
 import de.stefan_oltmann.kim.format.bmff.box.MetaBox
 import de.stefan_oltmann.kim.format.cr3.Cr3Reader
+import de.stefan_oltmann.kim.format.icc.IccProfile
 import de.stefan_oltmann.kim.format.jpeg.iptc.IptcMetadata
 import de.stefan_oltmann.kim.format.jxl.box.ExifBox
 import de.stefan_oltmann.kim.format.tiff.TiffReader
@@ -276,6 +277,60 @@ class HtmlGeneratorEdgeCaseTest {
         val actualHtml = buildGeoTiffHtmlString(geoTiffDirectory = null)
 
         assertTrue(actualHtml.contains("No GeoTiff data."))
+    }
+
+    /**
+     * Verifies that a missing ICC profile yields the no-data fallback.
+     */
+    @Test
+    fun testIccHtmlWithoutIcc() {
+
+        val actualHtml = buildIccHtmlString(iccProfile = null)
+
+        assertTrue(actualHtml.contains("No ICC profile data."))
+    }
+
+    /**
+     * Verifies that the ICC rendering intents are translated into the
+     * names ExifTool uses, and that unknown values fall back to the
+     * plain number.
+     */
+    @Test
+    fun testIccHtmlRenderingIntentNames() {
+
+        fun profileWithRenderingIntent(renderingIntent: Int) =
+            IccProfile(
+                size = 0,
+                cmmType = "",
+                version = "",
+                profileClass = "",
+                colorSpace = "",
+                connectionSpace = "",
+                primaryPlatform = null,
+                renderingIntent = renderingIntent,
+                entries = emptyList()
+            )
+
+        assertTrue(
+            buildIccHtmlString(profileWithRenderingIntent(0))
+                .contains("<td>Perceptual</td>")
+        )
+        assertTrue(
+            buildIccHtmlString(profileWithRenderingIntent(1))
+                .contains("<td>Media-Relative Colorimetric</td>")
+        )
+        assertTrue(
+            buildIccHtmlString(profileWithRenderingIntent(2))
+                .contains("<td>Saturation</td>")
+        )
+        assertTrue(
+            buildIccHtmlString(profileWithRenderingIntent(3))
+                .contains("<td>ICC-Absolute Colorimetric</td>")
+        )
+        assertTrue(
+            buildIccHtmlString(profileWithRenderingIntent(9))
+                .contains("<td>9</td>")
+        )
     }
 
     /**

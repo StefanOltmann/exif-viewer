@@ -126,6 +126,30 @@ class HtmlGeneratorTest {
     }
 
     @Test
+    fun testToIccHtmlString() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_3.jpg").readBytes()
+
+        val metadata = Kim.readMetadata(imageBytes)
+
+        assertNotNull(metadata)
+
+        val actualHtml = metadata.toIccHtmlString()
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_3_icc.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_3_icc.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_3_icc.html differs.")
+        }
+    }
+
+    @Test
     fun testGenerateHexHtmlJpeg() {
 
         val imageBytes = Path("src/jvmTest/resources/photo_1.jpg").readBytes()
@@ -142,6 +166,26 @@ class HtmlGeneratorTest {
                 .writeText(actualHtml)
 
             fail("HTML photo_1_hex.html differs.")
+        }
+    }
+
+    @Test
+    fun testGenerateHexHtmlPngWithIccProfile() {
+
+        val imageBytes = Path("src/jvmTest/resources/photo_12.png").readBytes()
+
+        val actualHtml = generateHexHtml(imageBytes)
+
+        val expectedHtml = Path("src/jvmTest/resources/photo_12_hex.html")
+            .readBytes()
+            .decodeToString()
+
+        if (expectedHtml != actualHtml) {
+
+            Path("build/photo_12_hex.html")
+                .writeText(actualHtml)
+
+            fail("HTML photo_12_hex.html differs.")
         }
     }
 

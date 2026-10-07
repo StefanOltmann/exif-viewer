@@ -36,6 +36,7 @@ import de.stefan_oltmann.kim.format.bmff.box.UuidBox
 import de.stefan_oltmann.kim.format.cr3.Cr3Reader
 import de.stefan_oltmann.kim.format.gif.GifChunkType
 import de.stefan_oltmann.kim.format.gif.GifImageParser
+import de.stefan_oltmann.kim.format.icc.IccProfile
 import de.stefan_oltmann.kim.format.jpeg.JpegConstants
 import de.stefan_oltmann.kim.format.jpeg.JpegSegmentAnalyzer
 import de.stefan_oltmann.kim.format.jpeg.iptc.IptcMetadata
@@ -43,6 +44,7 @@ import de.stefan_oltmann.kim.format.jxl.box.ExifBox
 import de.stefan_oltmann.kim.format.png.PngChunkType
 import de.stefan_oltmann.kim.format.png.PngConstants
 import de.stefan_oltmann.kim.format.png.PngImageParser
+import de.stefan_oltmann.kim.format.png.chunk.PngChunkIccp
 import de.stefan_oltmann.kim.format.raf.RafImageParser
 import de.stefan_oltmann.kim.format.tiff.TiffContents
 import de.stefan_oltmann.kim.format.tiff.TiffDirectory
@@ -82,6 +84,12 @@ private const val RAF_SIGNATURE_LENGTH = 16
 private const val RAF_DIRECTORY_START_POS = 84
 
 private const val RAF_DIRECTORY_ENTRY_LENGTH = 4
+
+/* Rendering intent values from the ICC profile header. */
+private const val ICC_RENDERING_INTENT_PERCEPTUAL = 0
+private const val ICC_RENDERING_INTENT_MEDIA_RELATIVE_COLORIMETRIC = 1
+private const val ICC_RENDERING_INTENT_SATURATION = 2
+private const val ICC_RENDERING_INTENT_ICC_ABSOLUTE_COLORIMETRIC = 3
 
 /* A BMFF box header is 4 length bytes plus 4 type bytes. */
 private const val BMFF_BOX_HEADER_LENGTH = 8
@@ -285,6 +293,75 @@ internal fun buildGeoTiffHtmlString(geoTiffDirectory: GeoTiffDirectory?): String
         append("</table>")
     }
 
+fun MediaMetadata.toIccHtmlString(): String =
+    buildIccHtmlString(iccProfile)
+
+internal fun buildIccHtmlString(iccProfile: IccProfile?): String =
+    buildString {
+
+        if (iccProfile == null) {
+            append("No ICC profile data.")
+            return@buildString
+        }
+
+        append("<table>")
+
+        append("<tr>")
+        append("<th>Name</th>")
+        append("<th>Value</th>")
+        append("</tr>")
+
+        appendIccRow("Profile size", iccProfile.size.toString())
+        appendIccRow("Profile CMM type", iccProfile.cmmType.escapeHtmlSpecialChars())
+        appendIccRow("Profile version", iccProfile.version)
+        appendIccRow("Profile class", iccProfile.profileClass.escapeHtmlSpecialChars())
+        appendIccRow("Color space data", iccProfile.colorSpace.escapeHtmlSpecialChars())
+        appendIccRow("Profile connection space", iccProfile.connectionSpace.escapeHtmlSpecialChars())
+        appendIccRow(
+            "Primary platform",
+            iccProfile.primaryPlatform?.escapeHtmlSpecialChars() ?: "-/-"
+        )
+        appendIccRow("Rendering intent", renderingIntentDescription(iccProfile.renderingIntent))
+
+        /*
+         * The tag table entries follow, like ExifTool lists them.
+         * All names and values are file-derived and must be escaped.
+         */
+        for (entry in iccProfile.entries) {
+
+            appendIccRow(
+                (entry.name ?: entry.signature).escapeHtmlSpecialChars(),
+                entry.value?.escapeHtmlSpecialChars() ?: "-/-"
+            )
+        }
+
+        append("</table>")
+    }
+
+private fun StringBuilder.appendIccRow(name: String, value: String) {
+
+    append("<tr>")
+
+    append("<td>")
+    append(name)
+    append("</td>")
+
+    append("<td>")
+    append(value)
+    append("</td>")
+
+    append("</tr>")
+}
+
+private fun renderingIntentDescription(renderingIntent: Int): String =
+    when (renderingIntent) {
+        ICC_RENDERING_INTENT_PERCEPTUAL -> "Perceptual"
+        ICC_RENDERING_INTENT_MEDIA_RELATIVE_COLORIMETRIC -> "Media-Relative Colorimetric"
+        ICC_RENDERING_INTENT_SATURATION -> "Saturation"
+        ICC_RENDERING_INTENT_ICC_ABSOLUTE_COLORIMETRIC -> "ICC-Absolute Colorimetric"
+        else -> renderingIntent.toString()
+    }
+
 fun generateHexHtml(bytes: ByteArray): String {
 
     val format = MediaFormat.detect(bytes) ?: return "Image format was not recognized."
@@ -354,6 +431,13 @@ private fun createJpegSlices(
                 )
             )
 
+        /*
+         * An ICC profile segment is an APP2 segment that starts with the
+         * "ICC_PROFILE" identifier. Large profiles are split across
+         * multiple APP2 segments that are numbered in their chunk sequence.
+         */
+        val isIccSegment = isJpegIccSegment(marker, bytes, startPosition)
+
         if (isExifSegment) {
 
             val exifBytes = bytes.slice(
@@ -389,6 +473,16 @@ private fun createJpegSlices(
                     startPosition = exifHeaderEndPos.toInt(),
                     endPosition = endPosition.toInt(),
                     exifBytes = true
+                )
+            )
+
+        } else if (isIccSegment) {
+
+            slices.addAll(
+                createJpegIccSegmentSlices(
+                    bytes = bytes,
+                    startPosition = startPosition,
+                    length = length
                 )
             )
 
@@ -430,11 +524,97 @@ private fun createJpegSlices(
 }
 
 /**
+ * Builds the slices of a JPEG APP2 ICC profile segment: the header, the
+ * "ICC_PROFILE" identifier, the chunk sequence and the profile bytes.
+ *
+ * Large profiles are split across multiple numbered APP2 segments, so
+ * the chunk sequence states which chunk this is of how many.
+ */
+private fun createJpegIccSegmentSlices(
+    bytes: ByteArray,
+    startPosition: Long,
+    length: Long
+): List<LabeledSlice> {
+
+    val slices = mutableListOf<LabeledSlice>()
+
+    val identifierStartPos = startPosition + 4
+    val identifierEndPos = identifierStartPos + JpegConstants.ICC_PROFILE_IDENTIFIER.size
+
+    val chunkNumber = bytes[identifierEndPos.toInt()].toUInt8()
+    val chunkCount = bytes[identifierEndPos.toInt() + 1].toUInt8()
+
+    /* APP2 Header */
+    slices.add(
+        LabeledSlice(
+            range = startPosition.toInt() until startPosition.toInt() + 4,
+            label = "APP2 (ICC profile chunk $chunkNumber of $chunkCount)"
+                .escapeSpaces() + SPACE + "[$length" + SPACE + "bytes]",
+            emphasisOnFirstBytes = 2
+        )
+    )
+
+    /* "ICC_PROFILE" identifier */
+    slices.add(
+        LabeledSlice(
+            range = identifierStartPos.toInt() until identifierEndPos.toInt(),
+            label = "ICC profile identifier",
+            separatorLineType = SeparatorLineType.THIN
+        )
+    )
+
+    /* Chunk sequence: the chunk number and the total chunk count. */
+    slices.add(
+        LabeledSlice(
+            range = identifierEndPos.toInt() until
+                identifierEndPos.toInt() + JpegConstants.ICC_SEQUENCE_BYTE_COUNT,
+            label = ("Chunk sequence" + SPACE + "=" + SPACE + "$chunkNumber of $chunkCount")
+                .escapeSpaces(),
+            separatorLineType = SeparatorLineType.NONE
+        )
+    )
+
+    val profileDataByteCount = length - 4 -
+        JpegConstants.ICC_IDENTIFIER_LENGTH -
+        JpegConstants.ICC_SEQUENCE_BYTE_COUNT
+
+    slices.add(
+        LabeledSlice(
+            range = identifierEndPos.toInt() + JpegConstants.ICC_SEQUENCE_BYTE_COUNT until
+                (startPosition + length).toInt(),
+            label = "ICC profile data".escapeSpaces() +
+                SPACE + "[$profileDataByteCount" + SPACE + "bytes]",
+            snipAfterLineCount = 5,
+            separatorLineType = SeparatorLineType.NONE
+        )
+    )
+
+    return slices
+}
+
+/**
  * Returns the slice with its range moved by the given offset, so slices
  * of an embedded structure land at their position inside the file.
  */
 private fun LabeledSlice.shiftedBy(offset: Int): LabeledSlice =
     copy(range = (range.first + offset)..(range.last + offset))
+
+/**
+ * Returns true when the segment is an APP2 segment that carries an ICC
+ * profile chunk, identified by the leading "ICC_PROFILE" identifier.
+ */
+private fun isJpegIccSegment(
+    marker: Int,
+    bytes: ByteArray,
+    startPosition: Long
+): Boolean =
+    marker == JpegConstants.JPEG_APP2_MARKER &&
+        JpegConstants.ICC_PROFILE_IDENTIFIER.contentEquals(
+            bytes.slice(
+                startIndex = startPosition.toInt() + 4,
+                count = JpegConstants.ICC_PROFILE_IDENTIFIER.size
+            )
+        )
 
 /**
  * Builds the slices of a Fuji RAF file from its section directory: the
@@ -585,6 +765,38 @@ private fun createPngSlices(bytes: ByteArray): List<LabeledSlice> {
                 )
             )
 
+        } else if (chunk is PngChunkIccp) {
+
+            /* The keyword is stored with a terminating zero. */
+            val keywordEndPos = dataOffset + chunk.keyword.length + 1
+
+            slices.add(
+                LabeledSlice(
+                    range = dataOffset until keywordEndPos,
+                    label = "iCCP keyword".escapeSpaces() + SPACE + "=" + SPACE +
+                        chunk.keyword.escapeHtmlSpecialChars(),
+                    separatorLineType = SeparatorLineType.NONE
+                )
+            )
+
+            slices.add(
+                LabeledSlice(
+                    range = keywordEndPos until keywordEndPos + 1,
+                    label = "Compression method",
+                    separatorLineType = SeparatorLineType.NONE
+                )
+            )
+
+            slices.add(
+                LabeledSlice(
+                    range = keywordEndPos + 1 until crcOffset,
+                    label = "Zlib compressed ICC profile".escapeSpaces() +
+                        SPACE + "[${chunk.bytes.size - chunk.keyword.length - 2}" + SPACE + "bytes]",
+                    snipAfterLineCount = 5,
+                    separatorLineType = SeparatorLineType.NONE
+                )
+            )
+
         } else if (chunk.bytes.isNotEmpty()) {
 
             slices.add(
@@ -680,6 +892,18 @@ private fun createWebPSlices(bytes: ByteArray): List<LabeledSlice> {
                     startPosition = dataOffset,
                     endPosition = endPosition,
                     exifBytes = true
+                )
+            )
+
+        } else if (chunk.type == WebPChunkType.ICCP) {
+
+            slices.add(
+                LabeledSlice(
+                    range = dataOffset until dataOffset + chunk.bytes.size,
+                    label = "ICC profile data".escapeSpaces() +
+                        SPACE + "[${chunk.bytes.size}" + SPACE + "bytes]",
+                    snipAfterLineCount = 5,
+                    separatorLineType = SeparatorLineType.NONE
                 )
             )
 

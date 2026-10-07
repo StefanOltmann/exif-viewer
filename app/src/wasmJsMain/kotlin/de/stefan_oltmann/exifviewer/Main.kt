@@ -62,6 +62,9 @@ private val textBox =
 private val geoTiffBox =
     document.getElementById("geotiff-box") as HTMLDivElement
 
+private val iccBox =
+    document.getElementById("icc-box") as HTMLDivElement
+
 private val hexBox =
     document.getElementById("hex-box") as HTMLDivElement
 
@@ -82,6 +85,9 @@ private val textElement =
 
 private val geotiffElement =
     document.getElementById("geotiff") as Element
+
+private val iccElement =
+    document.getElementById("icc") as Element
 
 private val hexElement =
     document.getElementById("hex") as Element
@@ -250,6 +256,7 @@ private fun processFile(uint8Array: Uint8Array) {
                 xmpBoxVisible = false,
                 textBoxVisible = false,
                 geotiffBoxVisible = false,
+                iccBoxVisible = false,
                 hexBoxVisible = false
             )
 
@@ -328,6 +335,7 @@ private fun processFile(uint8Array: Uint8Array) {
         }
 
         updateHtml(geotiffElement, metadata.toGeoTiffHtmlString())
+        updateHtml(iccElement, metadata.toIccHtmlString())
 
         /*
          * Set all boxes visible that have meaningful content.
@@ -339,6 +347,7 @@ private fun processFile(uint8Array: Uint8Array) {
             xmpBoxVisible = metadata.xmp != null,
             textBoxVisible = displayTextChunk,
             geotiffBoxVisible = metadata.exif?.geoTiffDirectory != null,
+            iccBoxVisible = metadata.iccProfile != null,
             hexBoxVisible = true
         )
 
@@ -502,6 +511,7 @@ private fun setBoxVisibility(
     xmpBoxVisible: Boolean,
     textBoxVisible: Boolean,
     geotiffBoxVisible: Boolean,
+    iccBoxVisible: Boolean,
     hexBoxVisible: Boolean
 ) {
 
@@ -511,6 +521,7 @@ private fun setBoxVisibility(
     xmpBox.style.display = cssDisplayValue(xmpBoxVisible)
     textBox.style.display = cssDisplayValue(textBoxVisible)
     geoTiffBox.style.display = cssDisplayValue(geotiffBoxVisible)
+    iccBox.style.display = cssDisplayValue(iccBoxVisible)
     hexBox.style.display = cssDisplayValue(hexBoxVisible)
 }
 
@@ -525,6 +536,7 @@ private fun makeAllRegularBoxesVisible() =
         xmpBoxVisible = true,
         textBoxVisible = false,
         geotiffBoxVisible = false,
+        iccBoxVisible = false,
         hexBoxVisible = true
     )
 
