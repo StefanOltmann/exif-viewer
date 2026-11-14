@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.4.21"
-kotlinx-io = "0.9.2"
-kim = "0.51.0"
+kotlinx-io = "0.9.3"
+kim = "0.52.0"
 detekt = "2.0.0-alpha.6"
 kover = "0.9.11"
 
